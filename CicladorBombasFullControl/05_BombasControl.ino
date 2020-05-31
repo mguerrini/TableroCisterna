@@ -126,7 +126,7 @@ bool IsBombaError(byte bombaNumber)
 
 bool IsBombaAvailable(byte bombaNumber)
 {
-  return IsBombaAvailable(bombaNumber) && !IsBombaError(bombaNumber);
+  return IsBombaEnable(bombaNumber) && !IsBombaError(bombaNumber);
 }
 
 void StartBomba1()
