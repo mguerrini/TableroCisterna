@@ -20,16 +20,22 @@ const byte CISTERNA_EMPTY_PIN = 5;
 const byte TANQUE_EMPTY_FULL_PIN = 7;
 
 // --- SALIDAS ---
-const byte BOMBA_SWAP_PIN = A6;
-const byte BOMBA1_ACTIVE = HIGH;
-const byte BOMBA2_ACTIVE = LOW;
+const byte BOMBA_SWAP_BTN_PIN = 3;
+const byte BOMBA_SWAP_PIN = A6; //por ahora no se usa
+const byte BOMBA1_ACTIVE = HIGH; //valor para Bomba1 Activa
+const byte BOMBA2_ACTIVE = LOW;  //valor para Bomba2 Activa
 
 //--- ALARMA ---
 const byte ALARM_PIN = 0;
 
 
-// ************ CONSTANTES **************
+// *************** DEBUG ***************
+const byte DEBUG = true;
+const byte DEBUG_CONTINUE_PIN = 78;
+const byte GET_STATUS_MODE_BTN_PIN = 12;
 
+
+// ************ CONSTANTES **************
 
 //--- MODO ---
 const byte MANUAL = 0;
@@ -98,7 +104,7 @@ typedef struct  {
 
   bool RequestOn;
   bool RequestOff;
-  
+
   bool RequestEnabled;
   bool RequestDisabled;
   bool IsContactorClosed;
@@ -120,6 +126,9 @@ typedef struct
   bool IsTanqueSensorMaxVal;
 } Sensor;
 
+// ----- TIPO DE BOTONES -----
+const bool IS_CHANGE_MODE_PULSADOR = true;
+
 
 // ----- VARIABLES -----
 byte _mode = 0; //0 = Manual, 1=Automatico
@@ -128,7 +137,6 @@ Sensor sensores = {false, false, false};
 Bomba bomba1 = {BOMBA1}; //, true, OFF, true, 0, false, false, false, false, false, true, BOMBA_OFF, 0};
 Bomba bomba2 = {BOMBA2};//, true, OFF, false, 0, false, false, false, false, false, true, BOMBA_OFF, 0};
 AutoFSM automaticFSM = {AUTO_IDLE, 0};
-AutoFSM manualFSM = {AUTO_IDLE, 0};
 
 //**************************************************//
 //                     SETUP
@@ -147,6 +155,8 @@ void setup() {
   SetupBombaSensors();
 
   SetupBombas();
+
+  SetupMode();
 }
 
 //************************************************//
@@ -154,6 +164,19 @@ void setup() {
 //************************************************//
 
 void loop() {
+  PrintStatus();
+
+  if (DEBUG)
+  {
+    if (!IsContinueButtonPressed())
+      return;
+  }
+
+  if (IsBombaSwapButtonPressed())
+  {
+    SwapAndActiveBomba();
+  }
+
   //valido los niveles para visualizar en el display
   ReadTanqueSensors();
 
@@ -166,8 +189,12 @@ void loop() {
   //leo la habilitación de las bombas
   ReadEnabledBombas();
 
+  //leo el modo de ejecución (MANUAL o AUTOMATICO)
+  ReadExecutionMode();
+
+
   // put your main code here, to run repeatedly:
-  AutomaticLoop();
+  //CicladorLoop();
 }
 
 
@@ -202,4 +229,22 @@ void SetupPins()
   pinMode(LED_PIN, OUTPUT);
   //lo apago
   digitalWrite(LED_PIN, LOW);
+}
+
+void PrintStatus()
+{
+  if (!IsGetStatusButtonPressed())
+    return;
+
+
+
+  //Sensores
+
+  //Estado del proceso
+  Serial.print(F("Automatic FSM Status: "));
+  PrintStateWorkingFSM(NULL, automaticFSM.State, true);
+
+  Serial.println(("Automatic FSM"));
+
+
 }

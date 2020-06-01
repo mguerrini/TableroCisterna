@@ -1,8 +1,6 @@
 
-void AutomaticLoop()
+void CicladorLoop()
 {
-  ReadExecutionMode();
-
   Bomba* bomba = GetActiveBomba();
 
   switch (automaticFSM.State)
@@ -348,6 +346,17 @@ Bomba* GetActiveBomba()
   return NULL;
   }
 */
+
+bool IsBombaSwapButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  IsButtonPressed("Change Mode", BOMBA_SWAP_BTN_PIN, state, isPressed, startTime);
+
+  return isPressed;
+}
 
 void ActivateBomba(Bomba* bomba)
 {

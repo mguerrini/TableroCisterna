@@ -6,6 +6,29 @@ boolean IsButtonPressed(const char* buttonName, int pin, boolean &state, unsigne
 
 // --- BOTONERA ---
 
+boolean IsGetStatusButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  IsButtonPressed("Get Status", GET_STATUS_MODE_BTN_PIN, state, isPressed, startTime);
+
+  return isPressed;
+}
+
+boolean IsContinueButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  IsButtonPressed("Debug Continue", DEBUG_CONTINUE_PIN, state, isPressed, startTime);
+
+  return isPressed;
+}
+
+
 boolean IsChangeModeButtonPressed()
 {
   static unsigned long startTime = 0;
@@ -63,11 +86,6 @@ boolean IsButtonPressed(const char* buttonName, int pin, boolean &state, boolean
     state = !state;
     startTime = millis();
     isPressed = false;
-
-    //Serial.print("Button ");
-    //Serial.print(buttonName);
-    //Serial.print(" changed - state ");
-    //Serial.println(state);
   }
 
   if (state == LOW && !isPressed) {
@@ -76,9 +94,6 @@ boolean IsButtonPressed(const char* buttonName, int pin, boolean &state, boolean
     if (output)
     {
       isPressed = true;
-      //Serial.print("Button ");
-      //Serial.print(buttonName);
-      //Serial.println(" pressed");
       digitalWrite(LED_PIN, HIGH);
       delay(100);
       digitalWrite(LED_PIN, LOW);

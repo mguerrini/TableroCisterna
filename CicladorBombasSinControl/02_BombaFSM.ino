@@ -140,7 +140,7 @@ void BombaStateMachine(Bomba* bomba)
         //ERROR....NO SE DETUVO LA BOMBA Y SIGUE FUNCIONANDO...NUNCA DEBERIA OCURRIR, PORQUE LOS SENSORES APAGAN LAS BOMBAS
         //Serial.println("La bomba sigue andando con sensores que indican apagada. Error en los sensores.");
         //Vuelvo a ON
-        bomba->State = FSM_BOMBA_ERROR_CONTACTOR_CERRADO;
+        bomba->State = BOMBA_STATE_ERROR_CONTACTOR_CERRADO;
         PrintExitStateBombaFSM(bomba, "Bomba continua encendida");
       }
       break;
@@ -211,7 +211,7 @@ void BombaStateMachine(Bomba* bomba)
 
     case FSM_BOMBA_ERROR_CONTACTOR_CERRADO:
       PrintEnterStateBombaFSM(bomba);
-      bomba->State = FSM_BOMBA_ON;
+      bomba->State = BOMBA_STATE_ON;
       UpdateBombaDisplay(bomba);
       PrintExitStateBombaFSM(bomba, "Bomba continua encendida");
       break;

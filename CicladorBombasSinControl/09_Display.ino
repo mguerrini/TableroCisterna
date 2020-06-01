@@ -97,13 +97,12 @@ void UpdateTanqueDisplay()
   display.display();
 }
 
-
-void UpdateDisplayToManual()
+void UpdateDisplayToManualMode()
 {
   UpdateDisplayMode("M");
 }
 
-void UpdateDisplayToAuto()
+void UpdateDisplayToAutoMode()
 {
   UpdateDisplayMode("A");
 }
