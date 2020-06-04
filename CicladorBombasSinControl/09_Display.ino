@@ -48,22 +48,22 @@ void UpdateBombaDisplay(bool enabled, int state, int row)
 {
   display.setTextColor(WHITE, BLACK);
   display.setTextSize(1);
-  display.setCursor(42, row);
+  display.setCursor(35, row);
 
   if (!enabled)
-    display.print("Deshabilitada");
+      display.print(F("Deshabilitada"));
   else
   {
     if (state == BOMBA_STATE_ON)
-      display.print("ON");
+      display.print(F("ON           "));
     else if (state == BOMBA_STATE_OFF)
-      display.print("OFF");
+      display.print(F("OFF          "));
     else if (state == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
-      display.print("Error contactor");
+      display.print(F("Err.Contactor"));
     else if (state == BOMBA_STATE_ERROR_CONTACTOR_CERRADO)
-      display.print("Error contactor");
+      display.print(F("Err.Contactor"));
     else if (state == BOMBA_STATE_ERROR_TERMICO)
-      display.print("Error termico");
+      display.print(F("Err.Termico  "));
   }
 
   display.display();
@@ -76,9 +76,9 @@ void UpdateCisternaDisplay()
 
   display.setCursor(54, 24);
   if (sensores.IsCisternaSensorMinVal)
-    display.print("Minimo");
+    display.print(F("Minimo"));
   else
-    display.print("Normal");
+    display.print(F("Normal"));
 
   display.display();
 }
@@ -90,9 +90,9 @@ void UpdateTanqueDisplay()
 
   display.setCursor(54, 16);
   if (sensores.IsTanqueSensorMinVal)
-    display.print("Minimo");
+    display.print(F("Minimo"));
   else
-    display.print("Normal");
+    display.print(F("Normal"));
 
   display.display();
 }
@@ -117,31 +117,31 @@ void UpdateDisplayMode(const char* mode)
 }
 
 
-void UpdateActiveBombaDisplay(byte activeNumber)
+void UpdateActiveBombaDisplay()
 {
   display.setTextColor(WHITE, BLACK);
   display.setTextSize(1);
-  if (activeNumber == BOMBA1)
-  {
-    display.setCursor(24, 0);
-    display.print("*");
-    display.setCursor(24, 8);
-    display.print(" ");
-  }
-  else if (activeNumber == BOMBA2)
 
+  if (bomba1.IsActive)
   {
-    display.setCursor(24, 0);
-    display.print(" ");
-    display.setCursor(24, 8);
-    display.print("*");
+    display.setCursor(18, 0);
+    display.print(F("*"));
+    display.setCursor(18, 8);
+    display.print(F(" "));
+  }
+  else if (bomba2.IsActive)
+  {
+    display.setCursor(18, 0);
+    display.print(F(" "));
+    display.setCursor(18, 8);
+    display.print(F("*"));
   }
   else
   {
-    display.setCursor(24, 0);
-    display.print(" ");
-    display.setCursor(24, 8);
-    display.print(" ");
+    display.setCursor(18, 0);
+    display.print(F(" "));
+    display.setCursor(18, 8);
+    display.print(F(" "));
   }
 
   display.display();
@@ -153,22 +153,26 @@ void PrintInitialText()
   display.setTextSize(2);
   display.setCursor(116, 0);
   if (_mode == AUTO)
-    display.print("A");
+    display.print(F("A"));
   else
-    display.print("M");
+    display.print(F("M"));
 
   display.setTextSize(1);
   display.setCursor(0, 0);
-  display.print("B1 ( ):");
+  display.print(F("B1( )"));
+  display.setCursor(29, 0);
+  display.print(F(":"));
 
   display.setCursor(0, 8);
-  display.print("B2 ( ):");
+  display.print(F("B2( )"));
+  display.setCursor(29, 8);
+  display.print(F(":"));
 
   display.setCursor(0, 16);
-  display.print("Tanque:");
+  display.print(F("Tanque:"));
 
   display.setCursor(0, 24);
-  display.print("Cisterna:");
+  display.print(F("Cisterna:"));
 
   // update display with all of the above graphics
   display.display();

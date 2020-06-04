@@ -11,9 +11,12 @@ void SetupBombas()
   bomba1.Number = BOMBA1;
   bomba1.IsEnabled = true;
   bomba1.State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
-  bomba1.IsActive = true;
+  bomba1.IsActive = false;
   bomba1.Uses = 0;
   bomba1.MachineState = FSM_BOMBA_OFF;
+  bomba1.FromMachineState = FSM_BOMBA_OFF;
+  bomba1.IsTermicoOk = false;
+  bomba2.IsContactorClosed = false;
 
   bomba2.Number = BOMBA2;
   bomba2.IsEnabled = true;
@@ -21,6 +24,16 @@ void SetupBombas()
   bomba2.IsActive = false;
   bomba2.Uses = 0;
   bomba2.MachineState = FSM_BOMBA_OFF;
+  bomba2.FromMachineState = FSM_BOMBA_OFF;
+  bomba2.IsTermicoOk = false;
+  bomba2.IsContactorClosed = false;
+
+  //activo la bomba 1
+  ActivateBomba(&bomba1);
+
+  ReadBombaSensors();
+
+  ReadEnabledBombas();
 
   UpdateBomba1Display();
   UpdateBomba2Display();
@@ -37,55 +50,127 @@ void ReadBombaSensors()
 
 void ReadBombaSensors(Bomba* bomba)
 {
+  bool contactorClosed;
+  bool termicoOk;
+  bool contactorChanged;
+  bool termicoChanged;
+
   if (bomba->Number == BOMBA1)
   {
-    bomba->IsContactorClosed = IsBomba1ContactorClosed();
-    bomba->IsTermicoOk = IsBomba1TermicoOk();
+    contactorClosed = IsBomba1ContactorClosed();
+    termicoOk = IsBomba1TermicoOk();
   }
   else
   {
-    bomba->IsContactorClosed = IsBomba2ContactorClosed();
-    bomba->IsTermicoOk = IsBomba1TermicoOk();
+    contactorClosed = IsBomba2ContactorClosed();
+    termicoOk = IsBomba2TermicoOk();
+  }
+
+  termicoChanged = termicoOk != bomba->IsTermicoOk;
+  contactorChanged = contactorClosed != bomba->IsContactorClosed;
+
+  bomba->IsContactorClosed = contactorClosed;
+  bomba->IsTermicoOk = termicoOk;
+
+  if (contactorChanged)
+  {
+    Serial.print(F("Bomba "));
+    Serial.print(bomba->Number);
+    if (bomba->IsContactorClosed)
+      Serial.println(F(": Contactor Cerrado"));
+    else
+      Serial.println(F(": Contactor Abierto"));
+  }
+
+  if (termicoChanged)
+  {
+    Serial.print(F("Bomba "));
+    Serial.print(bomba->Number);
+    if (bomba->IsTermicoOk)
+      Serial.println(F(": Termico Cerrado"));
+    else
+      Serial.println(F(": Termico Abierto"));
   }
 }
 
 void ReadEnabledBombas()
 {
-  bomba1.RequestEnabled = false;
-  bomba1.RequestDisabled = false;
-  bomba2.RequestEnabled = false;
-  bomba2.RequestDisabled = false;
+  /*
+    bomba1.RequestEnabled = false;
+    bomba1.RequestDisabled = false;
+    bomba2.RequestEnabled = false;
+    bomba2.RequestDisabled = false;
+  */
 
   bool pressed1 = IsBomba1EnabledButtonPressed();
-  bool pressed2 = IsBomba1EnabledButtonPressed();
+  bool pressed2 = IsBomba2EnabledButtonPressed();
 
   if (!pressed1 && !pressed2)
   {
     //estan habilitadas las dos
-    if (!bomba1.IsEnabled)
+    bomba1.RequestDisabled = false;
+    bomba2.RequestDisabled = false;
+
+    if (!bomba1.IsEnabled && !bomba1.RequestEnabled)
     {
       bomba1.RequestEnabled = true;
+      Serial.println(F("Bomba 1: Request Enabled"));
     }
 
-    if (!bomba2.IsEnabled)
+    if (!bomba2.IsEnabled && !bomba2.RequestEnabled)
     {
       bomba2.RequestEnabled = true;
+      Serial.println(F("Bomba 2: Request Enabled"));
+    }
+  }
+  else if (pressed1 && pressed2)
+  {
+    bomba1.RequestEnabled = false;
+    bomba2.RequestEnabled = false;
+
+    if (bomba1.IsEnabled && !bomba1.RequestDisabled)
+    {
+      bomba1.RequestDisabled = true;
+      Serial.println(F("Bomba 1: Request Disabled"));
+    }
+
+    if (bomba2.IsEnabled && !bomba2.RequestDisabled)
+    {
+      bomba2.RequestDisabled = true;
+      Serial.println(F("Bomba 2: Request Disabled"));
     }
   }
   else if (pressed1)
   {
-    if (!bomba1.IsEnabled)
+    bomba1.RequestDisabled = false;
+    bomba2.RequestEnabled = false;
+
+    if (!bomba1.IsEnabled && !bomba1.RequestEnabled)
     {
       bomba1.RequestEnabled = true;
+      Serial.println(F("Bomba 1: Request Enabled"));
+    }
+
+    if (bomba2.IsEnabled && !bomba2.RequestDisabled)
+    {
       bomba2.RequestDisabled = true;
+      Serial.println(F("Bomba 2: Request Disabled"));
     }
   }
   else if (pressed2)
   {
-    if (!bomba2.IsEnabled)
+    bomba1.RequestEnabled = false;
+    bomba2.RequestDisabled = false;
+
+    if (bomba1.IsEnabled && !bomba1.RequestDisabled)
+    {
+      bomba1.RequestDisabled = true;
+      Serial.println(F("Bomba 1: Request Disabled"));
+    }
+    if (!bomba2.IsEnabled && !bomba2.RequestEnabled)
     {
       bomba2.RequestEnabled = true;
-      bomba1.RequestDisabled = false;
+      Serial.println(F("Bomba 2: Request Enabled"));
     }
   }
 }
@@ -95,25 +180,9 @@ bool IsBombaOff(Bomba* bomba)
   return bomba->State == BOMBA_STATE_OFF;
 }
 
-bool IsBombaOff(byte bombaNumber)
-{
-  if (bombaNumber == BOMBA1)
-    return bomba1.State == BOMBA_STATE_OFF;
-  else
-    return bomba2.State == BOMBA_STATE_OFF;
-}
-
 bool IsBombaOn(Bomba* bomba)
 {
   return bomba->State == BOMBA_STATE_ON;
-}
-
-bool IsBombaOn(byte bombaNumber)
-{
-  if (bombaNumber == BOMBA1)
-    return bomba1.State == BOMBA_STATE_ON;
-  else
-    return bomba2.State == BOMBA_STATE_ON;
 }
 
 bool IsBombaEnabled(Bomba* bomba)
@@ -124,37 +193,77 @@ bool IsBombaEnabled(Bomba* bomba)
     return bomba2.IsEnabled;
 }
 
-bool IsBombaEnabled(byte bombaNumber)
-{
-  if (bombaNumber == BOMBA1)
-    return bomba1.IsEnabled;
-  else
-    return bomba2.IsEnabled;
-}
-
 bool IsBombaError(Bomba* bomba)
 {
-  return bomba->State >= 0;
+  return bomba->State < 0;
 }
-
-bool IsBombaError(byte bombaNumber)
-{
-  if (bombaNumber == BOMBA1)
-    return bomba1.State >= 0;
-  else
-    return bomba2.State >= 0;
-}
-
-
-bool IsBombaAvailable(byte bombaNumber)
-{
-  return IsBombaEnabled(bombaNumber) && !IsBombaError(bombaNumber);
-}
-
 
 bool IsBombaAvailable(Bomba* bomba)
 {
   return IsBombaEnabled(bomba) && !IsBombaError(bomba);
+}
+
+
+void ActivateBomba(Bomba* bomba)
+{
+  if (bomba->IsActive)
+  {
+    return;
+  }
+
+  if (bomba->Number == BOMBA1)
+  {
+    bomba2.IsActive = false;
+    bomba1.IsActive = true;
+    bomba1.Uses = 0;
+
+    digitalWrite(BOMBA_SWAP_PIN, BOMBA1_ACTIVE);
+  }
+  else
+  {
+    bomba1.IsActive = false;
+    bomba2.IsActive = true;
+    bomba2.Uses = 0;
+
+    digitalWrite(BOMBA_SWAP_PIN, BOMBA2_ACTIVE);
+  }
+
+  UpdateActiveBombaDisplay();
+}
+
+
+Bomba* SwapAndActiveBomba()
+{
+  bool isAvailable1 = IsBombaAvailable(&bomba1);
+  bool isAvailable2 = IsBombaAvailable(&bomba2);
+
+  if (isAvailable1 && isAvailable2)
+  {
+    if (bomba1.IsActive)
+    {
+      ActivateBomba(&bomba2);
+      return &bomba2;
+    }
+    else
+    {
+      ActivateBomba(&bomba1);
+      return &bomba1;
+    }
+  }
+
+  if (IsBombaAvailable(&bomba1))
+  {
+    ActivateBomba(&bomba1);
+    return &bomba1;
+  }
+
+  if (IsBombaAvailable(&bomba2))
+  {
+    ActivateBomba(&bomba2);
+    return &bomba2;
+  }
+
+  return NULL;
 }
 
 
@@ -164,7 +273,9 @@ boolean IsBomba1ContactorClosed()
   static boolean state;
   static boolean isPressed;
 
-  return IsButtonPressed("Bomba 1 Contactor", BOMBA1_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed("Bomba 1 Contactor", BOMBA1_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+
+  return isPressed;
 }
 
 boolean IsBomba2ContactorClosed()
@@ -173,7 +284,9 @@ boolean IsBomba2ContactorClosed()
   static boolean state;
   static boolean isPressed;
 
-  return IsButtonPressed("Bomba 2 Contactor", BOMBA2_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed("Bomba 2 Contactor", BOMBA2_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+
+  return isPressed;
 }
 
 
@@ -183,7 +296,9 @@ boolean IsBomba1TermicoOk()
   static boolean state;
   static boolean isPressed;
 
-  return IsButtonPressed("Bomba 1 Contactor", BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed("Bomba 1 Contactor", BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+
+  return isPressed;
 }
 
 boolean IsBomba2TermicoOk()
@@ -192,5 +307,7 @@ boolean IsBomba2TermicoOk()
   static boolean state;
   static boolean isPressed;
 
-  return IsButtonPressed("Bomba 2 Contactor", BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed("Bomba 2 Contactor", BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+
+  return isPressed;
 }

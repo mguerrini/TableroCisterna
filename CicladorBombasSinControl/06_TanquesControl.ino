@@ -17,6 +17,11 @@ void ReadCisternaSensors()
   {
     sensores.IsCisternaSensorMinVal = state;
     UpdateCisternaDisplay();
+
+    if (sensores.IsCisternaSensorMinVal)
+      Serial.println(F("Cisterna: Vacia."));
+    else
+      Serial.println(F("Cisterna: Normal."));
   }
 }
 
@@ -31,6 +36,11 @@ void ReadTanqueSensors()
     sensores.IsTanqueSensorMaxVal = full;
 
     UpdateTanqueDisplay();
+
+    if (full)
+      Serial.println(F("Tanque: Lleno."));
+    else
+      Serial.println(F("Tanque: Vacío."));
   }
 }
 

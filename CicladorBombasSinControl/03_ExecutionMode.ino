@@ -2,6 +2,7 @@
 // --- MODO ---
 void SetupMode()
 {
+  _mode = AUTO;
   ReadExecutionMode();
 }
 
@@ -51,12 +52,12 @@ void ChangeToAutomaticMode()
 {
   _mode = AUTO;
 
-  UpdateDisplayToAuto();
+  UpdateDisplayToAutoMode();
 }
 
 void ChangeToManualMode()
 {
   _mode = MANUAL;
 
-  UpdateDisplayToManual();
+  UpdateDisplayToManualMode();
 }

@@ -1,100 +1,110 @@
 void BombaStateMachine(Bomba* bomba)
 {
   long wait = 0;
+  bomba->NextMachineState = FSM_BOMBA_NULL;
+  PrintEnterStateBombaFSM(bomba);
 
   switch (bomba->MachineState)
   {
     case FSM_BOMBA_OFF:
-      PrintEnterStateBombaFSM(bomba);
+      if (IsFirstTimeInState(bomba))
+      {
+        bomba->State = BOMBA_STATE_OFF;
+        UpdateBombaDisplay(bomba);
+        break;
+      }
 
       if (bomba->RequestDisabled)
       {
-        bomba->MachineState = FSM_BOMBA_DISABLING;
+        bomba->NextMachineState = FSM_BOMBA_DISABLING;
         PrintExitStateBombaFSM(bomba, "Request Disabled");
-        return;
+        break;
       }
 
       if (bomba->RequestOn)
       {
         bomba->RequestOn = false;
         bomba->Timer = millis();
-        bomba->MachineState = FSM_BOMBA_TURNING_ON;
+        bomba->NextMachineState = FSM_BOMBA_TURNING_ON;
         PrintExitStateBombaFSM(bomba, "Request On");
-        return;
+        break;
       }
 
       if (bomba->IsContactorClosed)
       {
-        bomba->MachineState = FSM_BOMBA_TURNING_ON;
+        bomba->NextMachineState = FSM_BOMBA_TURNING_ON;
         PrintExitStateBombaFSM(bomba, "Contactor Cerrado");
-        return;
+        break;
       }
 
       if (!bomba->IsTermicoOk)
       {
-        bomba->MachineState = FSM_BOMBA_ERROR_TERMICO;
+        bomba->NextMachineState = FSM_BOMBA_ERROR_TERMICO;
         PrintExitStateBombaFSM(bomba, "Termico Abierto");
-        return;
+        break;
       }
 
       PrintExitStateBombaFSM(bomba, NULL);
       break;
 
     case FSM_BOMBA_ON:
-      PrintEnterStateBombaFSM(bomba);
+
+      if (IsFirstTimeInState(bomba))
+      {
+        bomba->State = BOMBA_STATE_ON;
+        UpdateBombaDisplay(bomba);
+        break;
+      }
 
       if (bomba->RequestDisabled)
       {
-        bomba->MachineState = FSM_BOMBA_DISABLING;
+        bomba->NextMachineState = FSM_BOMBA_DISABLING;
         PrintExitStateBombaFSM(bomba, "Request: Disabled");
-        return;
+        break;
       }
 
       if (bomba->RequestOff)
       {
-        bomba->MachineState = FSM_BOMBA_TURNING_OFF;
+        bomba->NextMachineState = FSM_BOMBA_TURNING_OFF;
         bomba->Timer = millis();
         PrintExitStateBombaFSM(bomba, "Request: Off");
-        return;
+        break;
       }
 
       if (!bomba->IsContactorClosed)
       {
         //se apago...
-        bomba->MachineState = FSM_BOMBA_TURNING_OFF;
+        bomba->NextMachineState = FSM_BOMBA_TURNING_OFF;
         bomba->Timer = millis();
         PrintExitStateBombaFSM(bomba, "Contactor Abierto");
-        return;
+        break;
       }
 
       if (!bomba->IsTermicoOk)
       {
-        bomba->MachineState = FSM_BOMBA_ERROR_TERMICO;
+        bomba->NextMachineState = FSM_BOMBA_ERROR_TERMICO;
         PrintExitStateBombaFSM(bomba, "Termico abierto");
-        return;
+        break;
       }
 
       PrintExitStateBombaFSM(bomba, NULL);
       break;
 
     case FSM_BOMBA_TURNING_ON:
-      PrintEnterStateBombaFSM(bomba);
 
       //espero a que el contactor este cerrado y que el termico este OK
       if (!bomba->IsTermicoOk)
       {
-        bomba->MachineState = FSM_BOMBA_ERROR_TERMICO;
+        bomba->NextMachineState = FSM_BOMBA_ERROR_TERMICO;
         PrintExitStateBombaFSM(bomba, "Termico abierto");
-        return;
+        break;
       }
 
       if (bomba->IsContactorClosed)
       {
-        bomba->State = BOMBA_STATE_ON;
-        UpdateBombaDisplay(bomba);
-        bomba->MachineState = FSM_BOMBA_ON;
+        bomba->NextMachineState = FSM_BOMBA_ON;
         PrintExitStateBombaFSM(bomba, "Contactor Cerrado");
-        return;
+        break;
       }
       else
       {
@@ -105,7 +115,7 @@ void BombaStateMachine(Bomba* bomba)
         if (wait > BOMBA_TURNING_ON_TIME)
         {
           //cambio de bomba activa
-          bomba->MachineState = FSM_BOMBA_ERROR_CONTACTOR_ABIERTO;
+          bomba->NextMachineState = FSM_BOMBA_ERROR_CONTACTOR_ABIERTO;
           PrintExitStateBombaFSM(bomba, "Esperando Contactor Cerrado...Timeout");
         }
         else
@@ -114,22 +124,18 @@ void BombaStateMachine(Bomba* bomba)
       break;
 
     case FSM_BOMBA_TURNING_OFF:
-      PrintEnterStateBombaFSM(bomba);
-
       if (!bomba->IsTermicoOk)
       {
-        bomba->MachineState = FSM_BOMBA_ERROR_TERMICO;
+        bomba->NextMachineState = FSM_BOMBA_ERROR_TERMICO;
         PrintExitStateBombaFSM(bomba, "Termico Abierto");
-        return;
+        break;
       }
 
       if (!bomba->IsContactorClosed)
       {
-        bomba->State = BOMBA_STATE_OFF;
-        UpdateBombaDisplay(bomba);
-        bomba->MachineState = FSM_BOMBA_OFF;
-        PrintExitStateBombaFSM(bomba, "Bomba Apagada");
-        return;
+        bomba->NextMachineState = FSM_BOMBA_OFF;
+        PrintExitStateBombaFSM(bomba, "Contactor Abierto");
+        break;
       }
 
       //espero un tiempo prudencial hasta que arranque la bomba
@@ -141,108 +147,106 @@ void BombaStateMachine(Bomba* bomba)
         //Serial.println("La bomba sigue andando con sensores que indican apagada. Error en los sensores.");
         //Vuelvo a ON
         bomba->State = BOMBA_STATE_ERROR_CONTACTOR_CERRADO;
-        PrintExitStateBombaFSM(bomba, "Bomba continua encendida");
+        PrintExitStateBombaFSM(bomba, "Contactor Cerrado-Bomba continua encendida");
       }
       break;
 
     case FSM_BOMBA_DISABLING:
-      PrintEnterStateBombaFSM(bomba);
 
       StopAlarm();
-      bomba->IsEnabled = false;
-      UpdateBombaDisplay(bomba);
-      bomba->MachineState = FSM_BOMBA_DISABLED;
+      bomba->RequestDisabled = false;
+      bomba->NextMachineState = FSM_BOMBA_DISABLED;
 
-      PrintExitStateBombaFSM(bomba, "Bomba Deshabilitada-Stop Alarma");
+      PrintExitStateBombaFSM(bomba, "Disabling-Stop Alarm");
       break;
 
     case FSM_BOMBA_ENABLING:
-      PrintEnterStateBombaFSM(bomba);
-
       StopAlarm();
+      bomba->RequestEnabled = false;
       bomba->IsEnabled = true;
       if (bomba->IsContactorClosed)
-        bomba->MachineState = FSM_BOMBA_TURNING_ON;
+        bomba->NextMachineState = FSM_BOMBA_TURNING_ON;
       else
-        bomba->MachineState = FSM_BOMBA_TURNING_OFF;
+        bomba->NextMachineState = FSM_BOMBA_TURNING_OFF;
 
-      PrintExitStateBombaFSM(bomba, "Enabled");
+      PrintExitStateBombaFSM(bomba, "Enabling-Stop Alarm");
       break;
 
     case FSM_BOMBA_DISABLED:
-      PrintEnterStateBombaFSM(bomba);
+      if (IsFirstTimeInState(bomba))
+      {
+        bomba->IsEnabled = false;
+        UpdateBombaDisplay(bomba);
+        PrintExitStateBombaFSM(bomba, "Bomba Deshabilitada");
+        break;
+      }
 
       if (bomba->RequestEnabled)
       {
-        bomba->MachineState = FSM_BOMBA_ENABLING;
-        PrintExitStateWorkingFSM("Request Enabled");
-        return;
+        bomba->NextMachineState = FSM_BOMBA_ENABLING;
+        PrintExitStateBombaFSM(bomba, "Request Enabled");
+        break;
       }
 
       PrintExitStateBombaFSM(bomba);
       break;
 
     case FSM_BOMBA_ERROR_CONTACTOR_ABIERTO:
-      if (bomba->State != BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
+      if (IsFirstTimeInState(bomba))
       {
-        PrintEnterStateBombaFSM(bomba);
-
         bomba->State = BOMBA_STATE_ERROR_CONTACTOR_ABIERTO;
         UpdateBombaDisplay(bomba);
         PrintExitStateBombaFSM(bomba, "Bomba continua encendida");
-        return;
+        break;
       }
 
       if (bomba->RequestEnabled)
       {
-        bomba->MachineState = FSM_BOMBA_ENABLING;
+        bomba->NextMachineState = FSM_BOMBA_ENABLING;
         PrintExitStateBombaFSM(bomba, "Request Enabled");
-        return;
+        break;
       }
 
       if (bomba->RequestDisabled)
       {
-        bomba->MachineState = FSM_BOMBA_DISABLING;
+        bomba->NextMachineState = FSM_BOMBA_DISABLING;
         PrintExitStateBombaFSM(bomba, "Request Disabled");
-        return;
+        break;
       }
-      
-      break;
 
-    case FSM_BOMBA_ERROR_CONTACTOR_CERRADO:
-      PrintEnterStateBombaFSM(bomba);
-      bomba->State = BOMBA_STATE_ON;
-      UpdateBombaDisplay(bomba);
-      PrintExitStateBombaFSM(bomba, "Bomba continua encendida");
       break;
-
+    /*
+        case FSM_BOMBA_ERROR_CONTACTOR_CERRADO:
+          PrintEnterStateBombaFSM(bomba);
+          bomba->State = BOMBA_STATE_ON;
+          UpdateBombaDisplay(bomba);
+          PrintExitStateBombaFSM(bomba, "Bomba continua encendida");
+          break;
+    */
     case FSM_BOMBA_ERROR_TERMICO:
-      PrintEnterStateBombaFSM(bomba);
-
       //por si las dos estan en este error y una se recupera, la otra tiene que seguir gritando
       StartAlarm();
 
-      if (bomba->State != BOMBA_STATE_ERROR_TERMICO)
+      if (IsFirstTimeInState(bomba))
       {
         bomba->State = BOMBA_STATE_ERROR_TERMICO;
         UpdateBombaDisplay(bomba);
-
         PrintExitStateBombaFSM(bomba, "Error Termico-Start Alarm");
-        return;
+        break;
       }
 
       if (bomba->RequestEnabled)
       {
-        bomba->MachineState = FSM_BOMBA_ENABLING;
+        bomba->NextMachineState = FSM_BOMBA_ENABLING;
         PrintExitStateBombaFSM(bomba, "Request Enabled");
-        return;
+        break;
       }
 
       if (bomba->RequestDisabled)
       {
-        bomba->MachineState = FSM_BOMBA_DISABLING;
+        bomba->NextMachineState = FSM_BOMBA_DISABLING;
         PrintExitStateBombaFSM(bomba, "Request Disabled");
-        return;
+        break;
       }
 
       //verifico si el termico se normalizo.
@@ -250,17 +254,26 @@ void BombaStateMachine(Bomba* bomba)
       {
         StopAlarm();
         if (bomba->IsContactorClosed)
-          bomba->MachineState = FSM_BOMBA_TURNING_ON;
+          bomba->NextMachineState = FSM_BOMBA_TURNING_ON;
         else
-          bomba->MachineState = FSM_BOMBA_TURNING_OFF;
+          bomba->NextMachineState = FSM_BOMBA_TURNING_OFF;
 
-        PrintExitStateBombaFSM(bomba, "Termico OK");
-        return;
+        PrintExitStateBombaFSM(bomba, "Termico OK-StopAlarm");
+        break;
       }
 
       PrintExitStateBombaFSM(bomba);
       break;
   }
+
+  bomba->FromMachineState = bomba->MachineState;
+  if (bomba->NextMachineState != FSM_BOMBA_NULL)
+    bomba->MachineState = bomba->NextMachineState;
+}
+
+bool IsFirstTimeInState(Bomba* bomba)
+{
+  return bomba->FromMachineState != bomba->MachineState;
 }
 
 void PrintEnterStateBombaFSM(Bomba* bomba)
@@ -280,11 +293,15 @@ void PrintExitStateBombaFSM(Bomba* bomba)
 
 void PrintExitStateBombaFSM(Bomba* bomba, const char* msg)
 {
+  BombaMachineStates state = bomba->MachineState;
+  if (bomba->NextMachineState != FSM_BOMBA_NULL)
+    state = bomba->NextMachineState;
+
   if (msg == NULL)
-    PrintStateBombaFSM(" -> ", bomba->MachineState, true);
+    PrintStateBombaFSM(" -> ", state, true);
   else
   {
-    PrintStateBombaFSM(" -> ", bomba->MachineState, false);
+    PrintStateBombaFSM(" -> ", state, false);
     Serial.print(F(" ("));
     Serial.print(msg);
     Serial.println(F(")"));
@@ -293,6 +310,9 @@ void PrintExitStateBombaFSM(Bomba* bomba, const char* msg)
 
 void PrintStateBombaFSM(const char* prefijo, BombaMachineStates current, bool newline)
 {
+  if (prefijo != NULL)
+    Serial.print(prefijo);
+
   switch (current)
   {
     case FSM_BOMBA_OFF:

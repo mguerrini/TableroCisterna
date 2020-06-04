@@ -6,15 +6,22 @@ boolean IsButtonPressed(const char* buttonName, int pin, boolean &state, unsigne
 
 // --- BOTONERA ---
 
+bool IsBombaSwapButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  return IsButtonPressed("Change Mode", BOMBA_SWAP_BTN_PIN, state, isPressed, startTime);
+}
+
 boolean IsGetStatusButtonPressed()
 {
   static unsigned long startTime = 0;
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Get Status", GET_STATUS_MODE_BTN_PIN, state, isPressed, startTime);
-
-  return isPressed;
+  return IsButtonPressed("Get Status", GET_STATUS_BTN_PIN, state, isPressed, startTime);
 }
 
 boolean IsContinueButtonPressed()
@@ -23,9 +30,7 @@ boolean IsContinueButtonPressed()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Debug Continue", DEBUG_CONTINUE_PIN, state, isPressed, startTime);
-
-  return isPressed;
+  return IsButtonPressed("Debug Continue", DEBUG_CONTINUE_PIN, state, isPressed, startTime);
 }
 
 
@@ -40,16 +45,6 @@ boolean IsChangeModeButtonPressed()
   return isPressed;
 }
 
-/*
-boolean IsChangeActiveBombaButtonPressed()
-{
-  static unsigned long startTime = 0;
-  static boolean state;
-  static boolean isPressed;
-
-  return IsButtonPressed("Change Active Bomba", CHANGE_ACTIVE_BTN_PIN, state, isPressed, startTime);
-}
-*/
 
 bool IsBombaEnabledButtonPressed(byte number)
 {
@@ -65,7 +60,9 @@ boolean IsBomba1EnabledButtonPressed()
   static boolean state;
   static boolean isPressed;
 
-  return IsButtonPressed("Bomba 1 Enabled/Disables", BOMBA1_ENABLE_PIN, state, isPressed, startTime);
+  IsButtonPressed("Bomba 1 Enabled/Disables", BOMBA1_ENABLE_PIN, state, isPressed, startTime);
+
+  return isPressed;
 }
 
 boolean IsBomba2EnabledButtonPressed()
@@ -78,6 +75,8 @@ boolean IsBomba2EnabledButtonPressed()
 
   return isPressed;
 }
+
+//Cada vez que se presiona el botón devuelve true y luego false. Mientras se mantenga presionado isPressed es true.
 
 boolean IsButtonPressed(const char* buttonName, int pin, boolean &state, boolean &isPressed, unsigned long &startTime)
 {
