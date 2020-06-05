@@ -66,34 +66,35 @@ enum BombaStates
 
 
 //--- MAQUINAS DE ESTADO ---
-enum BombaMachineStates {
-  FSM_BOMBA_OFF,
-  FSM_BOMBA_TURNING_ON,
-  FSM_BOMBA_ON,
-  FSM_BOMBA_TURNING_OFF,
-  FSM_BOMBA_ERROR_CONTACTOR_CERRADO,
-  FSM_BOMBA_ERROR_CONTACTOR_ABIERTO,
-  FSM_BOMBA_ERROR_TERMICO,
-  FSM_BOMBA_DISABLING,
-  FSM_BOMBA_DISABLED,
-  FSM_BOMBA_ENABLING,
-  FSM_BOMBA_NULL
-};
+//enum BombaMachineStates {
+const byte FSM_BOMBA_OFF = 1;
+const byte FSM_BOMBA_TURNING_ON = 2;
+const byte FSM_BOMBA_ON = 3;
+const byte FSM_BOMBA_TURNING_OFF = 4;
+const byte FSM_BOMBA_ERROR_CONTACTOR_CERRADO = 5;
+const byte FSM_BOMBA_ERROR_CONTACTOR_ABIERTO = 6;
+const byte FSM_BOMBA_ERROR_TERMICO = 7;
+const byte FSM_BOMBA_DISABLING = 8;
+const byte FSM_BOMBA_DISABLED = 9;
+const byte FSM_BOMBA_ENABLING = 10;
+const byte FSM_BOMBA_NULL = 0;
+//};
 
 //--- MODO AUTOMATICO ESTADOS ---
-enum AutomaticModeStates {
-  AUTO_IDLE,
-  AUTO_SELECTING_BOMBA,
-  AUTO_NOT_AVAILABLES_BOMBAS,
-  AUTO_STARTING,
-  AUTO_WORKING,
-  AUTO_STOPPING,
-  AUTO_TANQUE_FULL,
-  AUTO_STOPPING_BOMBA,
-  AUTO_CHANGE_BOMBA_FROM_ERROR,
-  AUTO_CHANGE_BOMBA_FROM_TIMEOUT,
-  AUTO_CHANGE_BOMBA
-} ;
+//enum AutomaticModeStates {
+const byte AUTO_IDLE = 1;
+const byte AUTO_SELECTING_BOMBA = 2;
+const byte AUTO_NOT_AVAILABLES_BOMBAS = 3;
+const byte AUTO_STARTING = 4;
+const byte AUTO_WORKING = 5;
+const byte AUTO_STOPPING = 6;
+const byte AUTO_TANQUE_FULL = 7;
+const byte AUTO_STOPPING_BOMBA = 8;
+const byte AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE = 9;
+const byte AUTO_CHANGE_BOMBA_FROM_TIMEOUT = 10;
+const byte AUTO_CHANGE_BOMBA = 11;
+const byte AUTO_NULL = 0;
+//};
 
 typedef struct  {
   byte Number;
@@ -110,15 +111,18 @@ typedef struct  {
   bool RequestDisabled;
   bool IsContactorClosed;
   bool IsTermicoOk;
-  BombaMachineStates FromMachineState;
-  BombaMachineStates MachineState;
-  BombaMachineStates NextMachineState;
+  byte FromMachineState;
+  byte MachineState;
+  byte NextMachineState;
   long Timer;
 } Bomba;
 
 typedef struct {
-  AutomaticModeStates State;
-  long Timer;
+  byte FromState;
+  byte State;
+  byte NextState;
+
+  long StoppingTimer;
 } AutoFSM;
 
 //--- SENSORES ---
@@ -134,12 +138,12 @@ const bool IS_CHANGE_MODE_PULSADOR = true;
 
 
 // ----- VARIABLES -----
-byte _mode = 0; //0 = Manual, 1=Automatico
+byte _mode = AUTO; //0 = Manual, 1=Automatico
 
 Sensor sensores = {false, false, false};
-Bomba bomba1 = {BOMBA1}; //, true, OFF, true, 0, false, false, false, false, false, true, BOMBA_OFF, 0};
-Bomba bomba2 = {BOMBA2};//, true, OFF, false, 0, false, false, false, false, false, true, BOMBA_OFF, 0};
-AutoFSM automaticFSM = {AUTO_IDLE, 0};
+Bomba bomba1 = {BOMBA1};
+Bomba bomba2 = {BOMBA2};
+AutoFSM automaticFSM = {};
 
 //**************************************************//
 //                     SETUP
@@ -148,18 +152,33 @@ void setup() {
   //start serial connection
   Serial.begin(115200);
 
+  _mode = AUTO;
+
   SetupPins();
+  Serial.println(F("Pins - Ready"));
 
   // put your setup code here, to run once:
   SetupDisplay();
+  Serial.println(F("Display - Ready"));
 
   SetupLevelSensors();
+  Serial.println(F("Level Sensors - Ready"));
 
   SetupBombaSensors();
+  Serial.println(F("Bombas Sensors - Ready"));
 
   SetupBombas();
+  Serial.println(F("Bombas - Ready"));
 
   SetupMode();
+  Serial.println(F("Mode - Ready"));
+
+  automaticFSM.FromState = AUTO_IDLE;
+  automaticFSM.State = AUTO_IDLE;
+  automaticFSM.NextState = AUTO_NULL;
+  //automaticFSM.Timer = 0;
+
+  Serial.println(F("Process - Ready"));
 }
 
 //************************************************//
@@ -256,6 +275,10 @@ void DoPrintStatus()
   //Estado del proceso
   Serial.print(F("Automatic FSM Status: "));
   PrintStateWorkingFSM(NULL, automaticFSM.State, true);
+
+  //Timer
+  Serial.print(F("Stopping Timer: "));
+  Serial.println(automaticFSM.StoppingTimer);
   Serial.println();
 
   //Niveles
@@ -308,6 +331,9 @@ void PrintBomba(Bomba* bomba)
 
   Serial.print(F("Uses: "));
   Serial.println(bomba->Uses);
+
+  Serial.print(F("Timer: "));
+  Serial.println(bomba->Timer);
 
   if (bomba->RequestOn)
     Serial.println(F("RequestOn: true"));

@@ -5,11 +5,9 @@
 
 
 // --- DISPLAY ---
-#define OLED_ADDR   0x3C
+#define OLED_ADDR 0x3C
 
 Adafruit_SSD1306 display(-1);
-
-
 
 void SetupDisplay()
 {
@@ -21,7 +19,7 @@ void SetupDisplay()
   // display a line of text
   display.setFont(NULL);
   display.setTextColor(WHITE);
-
+  
   PrintInitialText();
 }
 
@@ -156,24 +154,26 @@ void PrintInitialText()
     display.print(F("A"));
   else
     display.print(F("M"));
-
+  display.display();
+  
   display.setTextSize(1);
   display.setCursor(0, 0);
   display.print(F("B1( )"));
   display.setCursor(29, 0);
   display.print(F(":"));
+  display.display();
 
   display.setCursor(0, 8);
   display.print(F("B2( )"));
   display.setCursor(29, 8);
   display.print(F(":"));
+  display.display();
 
   display.setCursor(0, 16);
   display.print(F("Tanque:"));
+  display.display();
 
   display.setCursor(0, 24);
   display.print(F("Cisterna:"));
-
-  // update display with all of the above graphics
   display.display();
 }
