@@ -1,7 +1,10 @@
 
+//#define TEST
+const byte DEBUG = false;
+
 // ************ PINES **************
 // --- BOTONERA ---
-const byte LED_PIN = 13;
+const byte LED_PIN = A2;
 
 const byte CHANGE_MODE_BTN_PIN = 11;
 
@@ -26,11 +29,10 @@ const byte BOMBA1_ACTIVE = HIGH; //valor para Bomba1 Activa
 const byte BOMBA2_ACTIVE = LOW;  //valor para Bomba2 Activa
 
 //--- ALARMA ---
-const byte ALARM_PIN = A1;
+const byte ALARM_PIN = 13;
 
 
 // *************** DEBUG ***************
-const byte DEBUG = true;
 const byte DEBUG_CONTINUE_PIN = A1;
 const byte GET_STATUS_BTN_PIN = A0;
 
@@ -43,9 +45,11 @@ const byte AUTO = 1;
 
 // --- BOMBAS ---
 const byte BOMBA_USES_MAX = 1;
-const long BOMBA_TURNING_ON_TIME = 60000; //tiempo en milisegundos que espera a que el contactor avise que se cerro.
+const long BOMBA_TURNING_ON_TIME = 30000; //tiempo en milisegundos que espera a que el contactor avise que se cerro.
 const long BOMBA_TURNING_OFF_TIME = 60000; //tiempo que espera hasta que el contactor avise que se abrio.
 
+// --- CISTERNA ---
+const long CISTERNA_EMPTY_MAX_TIME = 60000 * 1; //tiempo que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
 
 const byte NONE = 0;
 const byte BOMBA1 = 1;
@@ -78,6 +82,7 @@ const byte FSM_BOMBA_DISABLING = 8;
 const byte FSM_BOMBA_DISABLED = 9;
 const byte FSM_BOMBA_ENABLING = 10;
 const byte FSM_BOMBA_NULL = 0;
+
 //};
 
 //--- MODO AUTOMATICO ESTADOS ---
@@ -93,6 +98,7 @@ const byte AUTO_STOPPING_BOMBA = 8;
 const byte AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE = 9;
 const byte AUTO_CHANGE_BOMBA_FROM_TIMEOUT = 10;
 const byte AUTO_CHANGE_BOMBA = 11;
+const byte AUTO_ERROR_BOMBA_WORKING = 12;
 const byte AUTO_NULL = 0;
 //};
 
@@ -131,6 +137,8 @@ typedef struct
   bool IsCisternaSensorMinVal;
   bool IsTanqueSensorMinVal;
   bool IsTanqueSensorMaxVal;
+  long CisternaEmptyStartTime;
+  long CisternaEmptyMillis;
 } Sensor;
 
 // ----- TIPO DE BOTONES -----
@@ -169,6 +177,9 @@ void setup() {
 
   SetupBombas();
   Serial.println(F("Bombas - Ready"));
+
+  SetupAlarm();
+  Serial.println(F("Alarm - Ready"));
 
   SetupMode();
   Serial.println(F("Mode - Ready"));
@@ -266,6 +277,7 @@ void PrintStatus()
 
 void DoPrintStatus()
 {
+  Serial.println();
   //Modo
   if (IsAutomaticMode())
     Serial.println(F("*** MODE: Automatic ***"));
@@ -274,7 +286,8 @@ void DoPrintStatus()
 
   //Estado del proceso
   Serial.print(F("Automatic FSM Status: "));
-  PrintStateWorkingFSM(NULL, automaticFSM.State, true);
+  PrintStateWorkingFSM(automaticFSM.State);
+  Serial.println();
 
   //Timer
   Serial.print(F("Stopping Timer: "));
@@ -288,6 +301,11 @@ void DoPrintStatus()
   else
     Serial.println(F("Cisterna Nivel Minimo: false"));
 
+  Serial.print(F("Cisterna Empty Start Time: "));
+  Serial.println(sensores.CisternaEmptyStartTime);
+  Serial.print(F("Cisterna Empty Time (milisegundos): "));
+  Serial.println(sensores.CisternaEmptyMillis);
+
   if (sensores.IsTanqueSensorMinVal)
     Serial.println(F("Tanque Nivel Minimo: true"));
   else
@@ -297,6 +315,7 @@ void DoPrintStatus()
     Serial.println(F("Tanque Nivel Maximo: true"));
   else
     Serial.println(F("Tanque Nivel Maximo: false"));
+
   Serial.println();
 
 
@@ -327,7 +346,8 @@ void PrintBomba(Bomba* bomba)
   PrintStateBomba(bomba, true);
 
   Serial.print(F("Machine Status: "));
-  PrintStateBombaFSM(NULL, bomba->MachineState, true);
+  PrintStateBombaFSM(bomba->MachineState);
+  Serial.println();
 
   Serial.print(F("Uses: "));
   Serial.println(bomba->Uses);

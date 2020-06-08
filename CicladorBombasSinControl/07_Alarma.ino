@@ -1,12 +1,59 @@
 
 // --- ALARM ---
-
-void StartAlarm()
+void SetupAlarm()
 {
-  digitalWrite(LED_PIN, HIGH);
+  noTone(ALARM_PIN); 
 }
 
-void StopAlarm()
+
+
+void StartAlarmNotAvailablesBombas()
 {
-  digitalWrite(LED_PIN, LOW);
+  tone(ALARM_PIN, 440);
+}
+
+void StopAlarmNotAvailablesBombas()
+{
+  noTone(ALARM_PIN); 
+}
+
+
+void StartAlarmBombaContactorAbierto()
+{
+  tone(ALARM_PIN, 440);
+}
+
+
+void StartAlarmBombaNotStop()
+{
+  tone(ALARM_PIN, 440);
+}
+
+void StartAlarmBombaTermico()
+{
+  tone(ALARM_PIN, 440);
+}
+
+void StopBombaAlarm()
+{
+  noTone(ALARM_PIN);
+}
+
+
+
+void StartCisternaEmptyAlarm()
+{
+  tone(ALARM_PIN, 440);
+}
+
+void StopCisternaEmptyAlarm()
+{
+  noTone(ALARM_PIN);
+}
+
+
+
+void StopAllAlarms()
+{
+  noTone(ALARM_PIN);
 }

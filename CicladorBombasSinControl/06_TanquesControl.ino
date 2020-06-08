@@ -18,12 +18,33 @@ void ReadCisternaSensors()
     sensores.IsCisternaSensorMinVal = state;
     UpdateCisternaDisplay();
 
+    sensores.CisternaEmptyStartTime = millis();
+
     if (sensores.IsCisternaSensorMinVal)
       Serial.println(F("Cisterna: Vacia."));
     else
       Serial.println(F("Cisterna: Normal."));
   }
+
+  if (sensores.IsCisternaSensorMinVal)
+  {
+    sensores.CisternaEmptyMillis = millis() - sensores.CisternaEmptyStartTime;
+    
+    if (sensores.CisternaEmptyMillis > CISTERNA_EMPTY_MAX_TIME)
+    {
+      StartCisternaEmptyAlarm();
+    }
+  }
+  else
+  {
+    sensores.CisternaEmptyStartTime = 0;
+    sensores.CisternaEmptyMillis = 0;
+    
+    StopCisternaEmptyAlarm();
+  }
 }
+
+
 
 void ReadTanqueSensors()
 {

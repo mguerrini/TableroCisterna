@@ -93,9 +93,9 @@ boolean IsButtonPressed(const char* buttonName, int pin, boolean &state, boolean
     if (output)
     {
       isPressed = true;
-      digitalWrite(LED_PIN, HIGH);
-      delay(100);
-      digitalWrite(LED_PIN, LOW);
+//      digitalWrite(LED_PIN, HIGH);
+//      delay(100);
+//      digitalWrite(LED_PIN, LOW);
     }
 
     return output;
