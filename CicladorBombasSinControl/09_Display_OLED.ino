@@ -1,3 +1,5 @@
+#ifdef DISPLAY_OLED_128x64
+
 // --- DISPLAY ---
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
@@ -177,3 +179,5 @@ void PrintInitialText()
   display.print(F("Cisterna:"));
   display.display();
 }
+
+#endif

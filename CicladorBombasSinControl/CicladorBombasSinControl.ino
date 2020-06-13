@@ -1,12 +1,26 @@
 
-//#define TEST
-const byte DEBUG = false;
+#define TEST
+
+//DISPLAYS
+//#define DISPLAY_OLED_128x64
+#define DISPLAY_20x4_I2C
+
+//ALARMAS
+//#define ALARM_BUZZER
+#define ALARM_LED
+
+
+const byte DEBUG = true;
 
 // ************ PINES **************
 // --- BOTONERA ---
-const byte LED_PIN = A2;
+const byte LED_PIN = 13;
 
 const byte CHANGE_MODE_BTN_PIN = 11;
+const byte RESET_BTN_PIN = A3;
+
+//--- ALARMA ---
+const byte ALARM_PIN = 12;
 
 // --- SENSORES ---
 const byte BOMBA1_ENABLE_PIN = 2;
@@ -24,12 +38,10 @@ const byte TANQUE_EMPTY_FULL_PIN = 9;
 
 // --- SALIDAS ---
 const byte BOMBA_SWAP_BTN_PIN = 10;
-const byte BOMBA_SWAP_PIN = 12; //salida al rele que activa el Rele de los contactores
+const byte BOMBA_SWAP_PIN = A2; //salida al rele que activa el Rele de los contactores
 const byte BOMBA1_ACTIVE = HIGH; //valor para Bomba1 Activa
 const byte BOMBA2_ACTIVE = LOW;  //valor para Bomba2 Activa
 
-//--- ALARMA ---
-const byte ALARM_PIN = 13;
 
 
 // *************** DEBUG ***************
@@ -55,6 +67,8 @@ const byte NONE = 0;
 const byte BOMBA1 = 1;
 const byte BOMBA2 = 2;
 
+// ----- TIPO DE BOTONES -----
+const bool IS_CHANGE_MODE_PULSADOR = true;
 
 // ***** MAQUINAS DE ESTADO *****
 
@@ -141,8 +155,6 @@ typedef struct
   long CisternaEmptyMillis;
 } Sensor;
 
-// ----- TIPO DE BOTONES -----
-const bool IS_CHANGE_MODE_PULSADOR = true;
 
 
 // ----- VARIABLES -----
@@ -197,6 +209,8 @@ void setup() {
 //************************************************//
 
 void loop() {
+  ReadResetButton();
+  
   //valido los niveles para visualizar en el display
   ReadTanqueSensors();
 
@@ -211,6 +225,9 @@ void loop() {
 
   //leo el modo de ejecución (MANUAL o AUTOMATICO)
   ReadExecutionMode();
+
+  //ejecuta la alarma si corresponde
+  ReadAlarm();
 
   if (IsBombaSwapButtonPressed())
   {
@@ -238,7 +255,7 @@ void SetupPins()
 {
   //testigo de operacion: led
   pinMode(LED_PIN, OUTPUT);
-
+  pinMode(RESET_BTN_PIN, INPUT_PULLUP);
   pinMode(CHANGE_MODE_BTN_PIN, INPUT_PULLUP);
 
   //sensores: contatores, termicos
@@ -262,6 +279,10 @@ void SetupPins()
   //Debug
   pinMode(DEBUG_CONTINUE_PIN, INPUT_PULLUP);
   pinMode(GET_STATUS_BTN_PIN, INPUT_PULLUP);
+
+  //Salida alarma
+  pinMode(ALARM_PIN, OUTPUT);
+
 
   //lo apago
   digitalWrite(LED_PIN, LOW);

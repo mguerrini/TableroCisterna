@@ -33,16 +33,28 @@ boolean IsContinueButtonPressed()
   return IsButtonPressed("Debug Continue", DEBUG_CONTINUE_PIN, state, isPressed, startTime);
 }
 
-
-boolean IsChangeModeButtonPressed()
+boolean IsResetButtonPressed()
 {
   static unsigned long startTime = 0;
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Change Mode", CHANGE_MODE_BTN_PIN, state, isPressed, startTime);
+  return IsButtonPressed("Debug Continue", RESET_BTN_PIN, state, isPressed, startTime);
+}
 
-  return isPressed;
+
+boolean IsChangeModeButtonPressed(bool isPulsadorMode)
+{
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  boolean pulsador = IsButtonPressed("Change Mode", CHANGE_MODE_BTN_PIN, state, isPressed, startTime);
+
+  if (isPulsadorMode)
+    return pulsador;
+  else
+    return isPressed;
 }
 
 
@@ -93,13 +105,15 @@ boolean IsButtonPressed(const char* buttonName, int pin, boolean &state, boolean
     if (output)
     {
       isPressed = true;
-//      digitalWrite(LED_PIN, HIGH);
-//      delay(100);
-//      digitalWrite(LED_PIN, LOW);
+      digitalWrite(LED_PIN, HIGH);
+      delay(100);
+      digitalWrite(LED_PIN, LOW);
     }
 
     return output;
   }
   else
+  {
     return false;
+  }
 }

@@ -192,7 +192,7 @@ void BombaStateMachine(Bomba* bomba)
     case FSM_BOMBA_DISABLED:
       if (IsFirstTimeInState(bomba))
       {
-        StopBombaAlarm();
+        StopAlarmBomba(bomba);
         bomba->IsEnabled = false;
         UpdateBombaDisplay(bomba);
         PrintBombaMessage(F("Bomba Deshabilitada"));
@@ -209,7 +209,7 @@ void BombaStateMachine(Bomba* bomba)
       break;
 
     case FSM_BOMBA_ENABLING:
-      StopBombaAlarm();
+      StopAlarmBomba(bomba);
       bomba->IsEnabled = true;
 
       if (!bomba->IsTermicoOk)
@@ -289,7 +289,7 @@ void BombaStateMachine(Bomba* bomba)
 
       if (IsFirstTimeInState(bomba))
       {
-        StartAlarmBombaContactorAbierto();
+        StartAlarmBombaContactorAbierto(bomba);
         bomba->State = BOMBA_STATE_ERROR_CONTACTOR_ABIERTO;
         UpdateBombaDisplay(bomba);
         PrintBombaMessage(F("Contactor abierto"));
@@ -303,7 +303,7 @@ void BombaStateMachine(Bomba* bomba)
       //verifico si el termico se normalizo.
       if (bomba->IsTermicoOk)
       {
-        StopBombaAlarm();
+        StopAlarmBomba(bomba);
         if (!IsBombaEnabled(bomba))
         {
           bomba->NextMachineState = FSM_BOMBA_DISABLING;
@@ -320,7 +320,7 @@ void BombaStateMachine(Bomba* bomba)
         break;
       }
 
-      StartAlarmBombaTermico();
+      StartAlarmBombaTermico(bomba);
 
       if (IsFirstTimeInState(bomba))
       {

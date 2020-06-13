@@ -63,7 +63,7 @@ void CicladorLoop()
       if (!IsBombaAvailable(bomba))
       {
         //me fijo si fue timeout
-        if (bomba->State == FSM_BOMBA_ERROR_CONTACTOR_ABIERTO )
+        if (bomba->State == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO )
         {
           if (!CanTurnOnBomba())
           {
@@ -196,7 +196,7 @@ void CicladorLoop()
         if (wait > (2 * BOMBA_TURNING_OFF_TIME))
         {
           //ERROR....NO SE DETUVO LA BOMBA Y SIGUE FUNCIONANDO...NUNCA DEBERIA OCURRIR, PORQUE LOS SENSORES APAGAN LAS BOMBAS
-          //automaticFSM.NextState = AUTO_ERROR_BOMBA_WORKING;
+          automaticFSM.NextState = AUTO_ERROR_BOMBA_WORKING;
           PrintWorkingFSMMessage(F("Timeout Stopping - Bomba On"), wait, 2 * BOMBA_TURNING_OFF_TIME);
         }
         else
@@ -287,20 +287,27 @@ void CicladorLoop()
         break;
       }
 
-      if (IsFirstTimeInAutoState())
+      if (IsBombaOff(bomba))
       {
-        StartAlarmBombaNotStop();
-        //TODO Resaltar el que la bomba no se detiene
-        PrintWorkingFSMMessage(F("Start Alarm - Error Bomba ON"));
-        break;
+        automaticFSM.NextState = AUTO_STOPPING;
+        PrintWorkingFSMMessage(F("Tanque - Bomba On"));
       }
 
       //Si se apaga es por los niveles...los sensores quizas fallan
       if (!IsBombaAvailable(bomba))
       {
-        StopBombaAlarm();
+        StopAlarmBomba(bomba);
         automaticFSM.NextState = AUTO_IDLE;
         PrintWorkingFSMMessage(F("Bomba Frenada"));
+        break;
+      }
+
+      //trato de recuperar el error antes de disparar la alarma
+      if (IsFirstTimeInAutoState())
+      {
+        StartAlarmBombaNotStop(bomba);
+        //TODO Resaltar el que la bomba no se detiene
+        PrintWorkingFSMMessage(F("Start Alarm - Error Bomba ON"));
         break;
       }
 
