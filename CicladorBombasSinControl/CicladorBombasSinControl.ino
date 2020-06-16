@@ -10,43 +10,61 @@
 #define ALARM_LED
 
 
-const byte DEBUG = true;
+const boolean DEBUG = true;
 
 // ************ PINES **************
-// --- BOTONERA ---
-const byte LED_PIN = 13;
 
-const byte CHANGE_MODE_BTN_PIN = 11;
+// --- DEBUG ---
+const byte DEBUG_CONTINUE_PIN = 4;
+#define GET_STATUS_AS_BUTTON
+#ifdef GET_STATUS_AS_BUTTON
+const byte GET_STATUS_BTN_PIN = 2;
+#endif
+
+// --- BUTTON ---
+
+const byte BOMBA_SWAP_BTN_PIN = A2;
+const byte CHANGE_MODE_BTN_PIN = A1;
 const byte RESET_BTN_PIN = A3;
+const byte VIEW_INFO_PIN = 2;
 
-//--- ALARMA ---
-const byte ALARM_PIN = 12;
-
-// --- SENSORES ---
-const byte BOMBA1_ENABLE_PIN = 2;
-const byte BOMBA2_ENABLE_PIN = 3;
-
-const byte BOMBA1_CONTACTOR_RETORNO_PIN = 4;
-const byte BOMBA2_CONTACTOR_RETORNO_PIN = 5;
-
-const byte BOMBA1_TERMICO_RETORNO_PIN = 6;
-const byte BOMBA2_TERMICO_RETORNO_PIN = 7;
-
-// --- NIVELES ---
-const byte CISTERNA_EMPTY_PIN = 8;
-const byte TANQUE_EMPTY_FULL_PIN = 9;
-
-// --- SALIDAS ---
-const byte BOMBA_SWAP_BTN_PIN = 10;
-const byte BOMBA_SWAP_PIN = A2; //salida al rele que activa el Rele de los contactores
+//--- INVERSOR ---
+const byte BOMBA_SWAP_PIN = A0; //salida al rele que activa el Rele de los contactores
 const byte BOMBA1_ACTIVE = HIGH; //valor para Bomba1 Activa
 const byte BOMBA2_ACTIVE = LOW;  //valor para Bomba2 Activa
 
+//--- ALARMA ---
+const byte ALARM_PIN = 3;
+//#define ALARM_AUX_ENBALED
+#ifdef ALARM_AUX_ENBALED
+const byte ALARM_PIN_AUX = 4;
+#endif
 
+// --- SENSOR FASE ---
+const byte FASE_PIN = 3;
 
-// *************** DEBUG ***************
-const byte DEBUG_CONTINUE_PIN = A1;
-const byte GET_STATUS_BTN_PIN = A0;
+// --- SENSORES BOMBAS ---
+const byte BOMBA1_ENABLE_PIN = 5;
+const byte BOMBA2_ENABLE_PIN = 6;
+
+const byte BOMBA1_CONTACTOR_RETORNO_PIN = 7;
+const byte BOMBA2_CONTACTOR_RETORNO_PIN = 8;
+
+const byte BOMBA1_TERMICO_RETORNO_PIN = 9;
+const byte BOMBA2_TERMICO_RETORNO_PIN = 10;
+
+// --- SENSOR DE NIVELES ---
+const byte CISTERNA_EMPTY_PIN = 11;
+const byte TANQUE_EMPTY_FULL_PIN = 12;
+
+//--- MODO ---
+const byte MODO_PIN = 13;
+
+// --- TESTIGO BUTONES ---
+#define TESTIGO_LED
+#ifdef TESTIGO_LED
+const byte LED_PIN = 2;
+#endif
 
 
 // ************ CONSTANTES **************
@@ -57,11 +75,13 @@ const byte AUTO = 1;
 
 // --- BOMBAS ---
 const byte BOMBA_USES_MAX = 1;
-const long BOMBA_TURNING_ON_TIME = 30000; //tiempo en milisegundos que espera a que el contactor avise que se cerro.
-const long BOMBA_TURNING_OFF_TIME = 60000; //tiempo que espera hasta que el contactor avise que se abrio.
+const long BOMBA_TURNING_ON_TIME = 5000; //tiempo en milisegundos que espera a que el contactor avise que se cerro.
+const long BOMBA_TURNING_OFF_TIME = 5000; //tiempo que espera hasta que el contactor avise que se abrio.
+const long BOMBA_CONTACTOR_ERROR_INTENTOS_MAX = 100; //Maxima cantidad de intentos
+const long BOMBA_CONTACTOR_ERROR_INTERVAL = 10000; //Intervalo de tiempo entre intentos de recuperar el contactor
 
 // --- CISTERNA ---
-const long CISTERNA_EMPTY_MAX_TIME = 60000 * 1; //tiempo que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
+const long CISTERNA_EMPTY_MAX_TIME = 10000 * 1; //tiempo que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
 
 const byte NONE = 0;
 const byte BOMBA1 = 1;
@@ -134,6 +154,9 @@ typedef struct  {
   byte FromMachineState;
   byte MachineState;
   byte NextMachineState;
+
+  long ContactorErrorCounter;
+  long StartError;
   long Timer;
 } Bomba;
 
@@ -142,6 +165,7 @@ typedef struct {
   byte State;
   byte NextState;
 
+  boolean IsFaseOk;
   long StoppingTimer;
 } AutoFSM;
 
@@ -155,7 +179,34 @@ typedef struct
   long CisternaEmptyMillis;
 } Sensor;
 
+//--- ALARMA ---
+typedef struct  {
+  boolean IsBomba1AlarmON = false;
+  boolean IsBomba2AlarmON = false;
+  boolean IsManualAlarmON = false;
+  boolean IsCisternaAlarmON = false;
+  boolean IsNotAvailableBombasAlarmON = false;
 
+  //alarma
+  long ActiveTime;
+  long InactiveTime;
+  boolean IsActive;
+
+  long StartTimeBomba1;
+  long StartTimeBomba2;
+  long StartCisternaAlarm;
+  long StartTimeIsNotAvailableBombas;
+} Alarm;
+
+typedef struct {
+  unsigned long Bomba1Uses;
+  unsigned long Bomba2Uses;
+  unsigned long Bomba1TotalMinutes;
+  unsigned long Bomba2TotalMinutes;
+  unsigned int Bomba1TotalErrorTermico;
+  unsigned int Bomba2TotalErrorTermico;
+  unsigned int TotalErrorFase;
+} Statistics;
 
 // ----- VARIABLES -----
 byte _mode = AUTO; //0 = Manual, 1=Automatico
@@ -163,7 +214,9 @@ byte _mode = AUTO; //0 = Manual, 1=Automatico
 Sensor sensores = {false, false, false};
 Bomba bomba1 = {BOMBA1};
 Bomba bomba2 = {BOMBA2};
+Alarm alarm = {};
 AutoFSM automaticFSM = {};
+Statistics statistics = { };
 
 //**************************************************//
 //                     SETUP
@@ -196,6 +249,13 @@ void setup() {
   SetupMode();
   Serial.println(F("Mode - Ready"));
 
+  SetupFase();
+  Serial.println(F("Fase Sensor - Ready"));
+
+  SetupCommands();
+  Serial.println(F("Commands - Ready"));
+
+
   automaticFSM.FromState = AUTO_IDLE;
   automaticFSM.State = AUTO_IDLE;
   automaticFSM.NextState = AUTO_NULL;
@@ -204,13 +264,16 @@ void setup() {
   Serial.println(F("Process - Ready"));
 }
 
+
 //************************************************//
 //                     LOOP
 //************************************************//
 
 void loop() {
+  ReadCommands();
+
   ReadResetButton();
-  
+
   //valido los niveles para visualizar en el display
   ReadTanqueSensors();
 
@@ -229,36 +292,61 @@ void loop() {
   //ejecuta la alarma si corresponde
   ReadAlarm();
 
+  //Las bombas se detienen asi que el circuito seguiria normal.......pero no deberia arrancar
+  ReadFase();
+  
+  PrintStatus();
+
   if (IsBombaSwapButtonPressed())
   {
     SwapAndActiveBomba();
   }
 
-  PrintStatus();
-
   if (DEBUG)
   {
     if (!IsContinueButtonPressed())
       return;
+    else
+      Serial.println(F("Continue"));
   }
-
-  Serial.println(F("Continue"));
 
   // put your main code here, to run repeatedly:
   CicladorLoop();
 }
 
+//************************************************//
+//                 AUXILIARES
+//************************************************//
 
 // --- PINS ---
 
 void SetupPins()
 {
-  //testigo de operacion: led
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(RESET_BTN_PIN, INPUT_PULLUP);
-  pinMode(CHANGE_MODE_BTN_PIN, INPUT_PULLUP);
+  // --- DEBUG ---
+  pinMode(DEBUG_CONTINUE_PIN, INPUT_PULLUP);
+#ifdef GET_STATUS_AS_BUTTON
+  pinMode(GET_STATUS_BTN_PIN, INPUT_PULLUP);
+#endif
 
-  //sensores: contatores, termicos
+  // --- BUTTON ---
+  pinMode(BOMBA_SWAP_BTN_PIN, INPUT_PULLUP);
+  pinMode(CHANGE_MODE_BTN_PIN, INPUT_PULLUP);
+  pinMode(RESET_BTN_PIN, INPUT_PULLUP);
+  pinMode(VIEW_INFO_PIN, INPUT_PULLUP);
+
+  // --- INVERSOR ---
+  pinMode(BOMBA_SWAP_PIN, OUTPUT);
+
+  // --- ALARMA ---
+  pinMode(ALARM_PIN, OUTPUT);
+#ifdef ALARM_AUX_ENBALED
+  pinMode(ALARM_PIN_AUX, OUTPUT);
+#endif
+
+  // --- SENSOR FASE ---
+  pinMode(FASE_PIN, INPUT_PULLUP);
+
+  // --- SENSORES BOMBAS ---
   pinMode(BOMBA1_ENABLE_PIN, INPUT_PULLUP);
   pinMode(BOMBA2_ENABLE_PIN, INPUT_PULLUP);
   pinMode(BOMBA1_CONTACTOR_RETORNO_PIN, INPUT_PULLUP);
@@ -266,26 +354,18 @@ void SetupPins()
   pinMode(BOMBA1_TERMICO_RETORNO_PIN, INPUT_PULLUP);
   pinMode(BOMBA2_TERMICO_RETORNO_PIN, INPUT_PULLUP);
 
-  //Niveles
+  // --- SENSOR DE NIVELES ---
   pinMode(CISTERNA_EMPTY_PIN, INPUT_PULLUP);
   pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
 
-  //Swap
-  pinMode(BOMBA_SWAP_BTN_PIN, INPUT_PULLUP);
+  //--- MODO ---
+  pinMode(MODO_PIN, OUTPUT);
 
-  //Salidas contactores
-  pinMode(BOMBA_SWAP_PIN, OUTPUT);
-
-  //Debug
-  pinMode(DEBUG_CONTINUE_PIN, INPUT_PULLUP);
-  pinMode(GET_STATUS_BTN_PIN, INPUT_PULLUP);
-
-  //Salida alarma
-  pinMode(ALARM_PIN, OUTPUT);
-
-
-  //lo apago
+  // --- TESTIGO BUTONES ---
+#ifdef TESTIGO_LED
+  pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
+#endif
 }
 
 void PrintStatus()
@@ -339,6 +419,7 @@ void DoPrintStatus()
 
   Serial.println();
 
+  PrintAlarm();
 
   //Bombas
   Serial.println(F("*** BOMBA 1 ***"));
@@ -349,6 +430,38 @@ void DoPrintStatus()
   PrintBomba(&bomba2);
   Serial.println();
 
+}
+
+void PrintAlarm()
+{
+  Serial.println(F("*** Alarmas ***"));
+  if (alarm.IsManualAlarmON)
+    Serial.println(F("Manual: ON"));
+  else
+    Serial.println(F("Manual: OFF"));
+
+
+  if (alarm.IsNotAvailableBombasAlarmON)
+    Serial.println(F("Bombas no disponibles: ON"));
+  else
+    Serial.println(F("Bombas no disponibles: OFF"));
+
+  if (alarm.IsBomba1AlarmON)
+    Serial.println(F("Bomba 1: ON"));
+  else
+    Serial.println(F("Bomba 1: OFF"));
+
+  if (alarm.IsBomba2AlarmON)
+    Serial.println(F("Bomba 2: ON"));
+  else
+    Serial.println(F("Bomba 2: OFF"));
+
+  if (alarm.IsCisternaAlarmON)
+    Serial.println(F("Cisterna: ON"));
+  else
+    Serial.println(F("Cisterna: OFF"));
+
+  Serial.println();
 }
 
 void PrintBomba(Bomba* bomba)
@@ -375,6 +488,10 @@ void PrintBomba(Bomba* bomba)
 
   Serial.print(F("Timer: "));
   Serial.println(bomba->Timer);
+
+  Serial.print(F("Contactor Error Counter: "));
+  Serial.println(bomba->ContactorErrorCounter);
+
 
   if (bomba->RequestOn)
     Serial.println(F("RequestOn: true"));

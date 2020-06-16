@@ -76,7 +76,7 @@ boolean IsCisternaEmpty()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Cisterna Vacia", CISTERNA_EMPTY_PIN, state, isPressed, startTime);
+  IsButtonPressed(CISTERNA_EMPTY_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
@@ -88,7 +88,7 @@ boolean IsTanqueEmpty()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Tanque Vacio", TANQUE_EMPTY_FULL_PIN, state, isPressed, startTime);
+  IsButtonPressed(TANQUE_EMPTY_FULL_PIN, state, isPressed, startTime);
 
   return isPressed;
 }

@@ -1,23 +1,99 @@
 #ifdef DISPLAY_20x4_I2C
 
 // --- DISPLAY ---
-#include <Wire.h> 
+#include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
+boolean IsMainViewActive = true;
+boolean IsErrorFaseViewActive = false;
+boolean IsInfoViewActive = false;
+byte ActiveInfoViewNumber = 0;
 
 void SetupDisplay()
 {
-  lcd.init();                      // initialize the lcd 
+  lcd.init();                      // initialize the lcd
   lcd.init();
   // Print a message to the LCD.
   lcd.clear();
   lcd.backlight();
-  
+
+  IsMainViewActive = true;
+  IsErrorFaseViewActive = false;
+  IsInfoViewActive = false;
+  ActiveInfoViewNumber = 0;
+
   PrintInitialText();
 }
 
+//---------------------- VISTAS ----------------------
+
+void ShowErrorFaseView()
+{
+  lcd.clear();
+  lcd.setCursor(5, 1);
+  lcd.print(F("ERROR"));
+  lcd.setCursor(5, 2);
+  lcd.print(F("FASE CAIDA"));
+
+
+  IsMainViewActive = false;
+  IsErrorFaseViewActive = true;
+  IsInfoViewActive = false;
+}
+
+void ShowMainView()
+{
+  lcd.clear();
+  PrintInitialText();
+  UpdateBomba1Display();
+  UpdateBomba2Display();
+
+  UpdateCisternaDisplay();
+  UpdateTanqueDisplay();
+
+  IsMainViewActive = true;
+  IsErrorFaseViewActive = false;
+  IsInfoViewActive = false;
+
+}
+
+void ShowInfoView()
+{
+  if (IsInfoViewActive)
+  {
+    //me fijo cual es la ventana activa y muestro la siguiente.
+  }
+  else
+    ActiveInfoViewNumber = 0;
+
+
+  IsMainViewActive = false;
+  IsErrorFaseViewActive = false;
+  IsInfoViewActive = true;
+
+}
+
+void ShowBomba1InfoView()
+{
+
+}
+
+void ShowBomba2InfoView()
+{
+
+}
+
+void ShowOtherInfoView()
+{
+
+}
+
+
+
+
+// -------- ACTUALIZACIONES ---------
 
 void UpdateBombaDisplay(Bomba* bomba)
 {
@@ -42,7 +118,7 @@ void UpdateBombaDisplay(bool enabled, int state, int row)
   lcd.setCursor(6, row);
 
   if (!enabled)
-      lcd.print(F("Deshabilitada"));
+    lcd.print(F("Deshabilitada"));
   else
   {
     if (state == BOMBA_STATE_ON)

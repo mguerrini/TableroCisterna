@@ -1,10 +1,23 @@
 
 // --- MODO ---
-void SetupMode()
+void SetupCommands()
 {
-  _mode = AUTO;
-  ReadExecutionMode();
 }
+
+void ReadCommands()
+{
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    int incomingByte = Serial.read();
+    char c = char(incomingByte);
+
+    if (c == 'S' || c == 's')
+    {
+      DoPrintStatus();
+    }
+  }
+}
+
 
 void ReadResetButton()
 {
@@ -35,65 +48,37 @@ void ReadResetButton()
     UpdateActiveBombaDisplay();
     UpdateCisternaDisplay();
     UpdateTanqueDisplay();
+    
     StopAllAlarms();
   }
 }
 
-void ReadExecutionMode()
+
+
+boolean IsResetButtonPressed()
 {
-  byte currMode = _mode;
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
 
-  if (IsChangeModeButtonPressed(IS_CHANGE_MODE_PULSADOR))
-  {
-    //si hay una bomba encendida...se apaga pero no se notifica si no se apago como un error porque puede ser que se haya prendido de manera externa.
-    //paso a manual
-    //pulsador...
-    if (IsAutomaticMode())
-    {
-      _mode = MANUAL;
-    }
-    else
-    {
-      _mode = AUTO;
-    }
-     
-  }
-
-
-  if (currMode != _mode)
-  {
-    if (IsAutomaticMode())
-    {
-      Serial.println(F("Change Mode -> AUTO"));
-      StopManualAlarm();
-      UpdateDisplayToAutoMode();
-    }
-    else
-    {
-      Serial.println(F("Change Mode -> MANUAL"));
-      StartManualAlarm();
-      UpdateDisplayToManualMode();
-    }
-  }
+  return IsButtonPressed(RESET_BTN_PIN, state, isPressed, startTime);
 }
 
 
-
-bool IsAutomaticMode()
+boolean IsGetStatusButtonPressed()
 {
-  return _mode == AUTO;
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  return IsButtonPressed(GET_STATUS_BTN_PIN, state, isPressed, startTime);
 }
 
-void ChangeToAutomaticMode()
+boolean IsContinueButtonPressed()
 {
-  _mode = AUTO;
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
 
-  UpdateDisplayToAutoMode();
-}
-
-void ChangeToManualMode()
-{
-  _mode = MANUAL;
-
-  UpdateDisplayToManualMode();
+  return IsButtonPressed(DEBUG_CONTINUE_PIN, state, isPressed, startTime);
 }

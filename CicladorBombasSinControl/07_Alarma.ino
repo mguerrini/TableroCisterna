@@ -1,32 +1,13 @@
 //************ VARIABLES ******************
 
-const int TimeOn_Alarma = 500;
-const int TimeOff_Alarma = 500;
+const int TimeOn_AlarmaManual = 100;
+const int TimeOff_AlarmaManual = 3000;
 
-const int TimeOn_AlarmaManual = 500;
-const int TimeOff_AlarmaManual = 500;
+const int TimeOn_AlarmaHigh = 200;
+const int TimeOff_AlarmaHigh = 200;
 
-const int TimeOn_AlarmaBomba = 500;
-const int TimeOff_AlarmaBomba = 500;
-
-typedef struct  {
-  boolean IsBomba1AlarmON = false;
-  boolean IsBomba2AlarmON = false;
-  boolean IsManualAlarmON = false;
-  boolean IsCisternaAlarmON = false;
-  boolean IsNotAvailableBombasAlarmON = false;
-
-  long ActiveTime;
-  long InactiveTime;
-  boolean IsActive;
-
-  long StartTimeBomba1;
-  long StartTimeBomba2;
-  long StartCisternaAlarm;
-  long StartTimeIsNotAvailableBombas;
-} Alarm;
-
-Alarm alarm = {};
+const int TimeOn_AlarmaBomba = 100;
+const int TimeOff_AlarmaBomba = 300;
 
 //********************************************
 
@@ -34,13 +15,21 @@ Alarm alarm = {};
 void ReadAlarm()
 {
   if (!alarm.IsManualAlarmON && !alarm.IsCisternaAlarmON && !alarm.IsBomba1AlarmON && !alarm.IsBomba2AlarmON && !alarm.IsNotAvailableBombasAlarmON)
+  {
+    if (alarm.IsActive)
+    {
+      alarm.ActiveTime = 0;
+      alarm.IsActive = false;
+      DeactivateAlarm();
+    }
     return;
+  }
 
   if (alarm.ActiveTime == 0)
   {
     //primera vez que se prende.
     alarm.ActiveTime = millis();
-    alarm.IsActive=true;
+    alarm.IsActive = true;
     ActivateAlarm();
     return;
   }
@@ -52,11 +41,11 @@ void ReadAlarm()
   }
   else if (alarm.IsCisternaAlarmON)
   {
-    ProcessAlarm(TimeOn_Alarma, TimeOff_Alarma);
+    ProcessAlarm(TimeOn_AlarmaHigh, TimeOff_AlarmaHigh);
   }
   else if (alarm.IsNotAvailableBombasAlarmON)
   {
-    ProcessAlarm(TimeOn_Alarma, TimeOff_Alarma);
+    ProcessAlarm(TimeOn_AlarmaHigh, TimeOff_AlarmaHigh);
   }
   else if (alarm.IsBomba1AlarmON || alarm.IsBomba2AlarmON)
   {
@@ -70,7 +59,7 @@ void ProcessAlarm(int activeTime, int inactiveTime)
   long delta;
   if (alarm.IsActive)
   {
-    delta = t-alarm.ActiveTime;
+    delta = t - alarm.ActiveTime;
     if (delta > activeTime)
     {
       alarm.IsActive = false;
@@ -80,7 +69,7 @@ void ProcessAlarm(int activeTime, int inactiveTime)
   }
   else
   {
-    delta = t-alarm.InactiveTime;
+    delta = t - alarm.InactiveTime;
     if (delta > inactiveTime)
     {
       alarm.IsActive = true;
@@ -92,24 +81,22 @@ void ProcessAlarm(int activeTime, int inactiveTime)
 
 void ResetAlarm()
 {
+  StopAllAlarms();
+  alarm.ActiveTime = 0;
+  alarm.InactiveTime = 0;
+  alarm.IsActive = false;
+
+  DeactivateAlarm();
+}
+
+
+void StopAllAlarms()
+{
   alarm.IsBomba1AlarmON = false;
   alarm.IsBomba2AlarmON = false;
   alarm.IsManualAlarmON = false;
   alarm.IsCisternaAlarmON = false;
   alarm.IsNotAvailableBombasAlarmON = false;
-
-  alarm.ActiveTime = 0;
-  alarm.InactiveTime = 0;
-  alarm.IsActive = false;
-}
-
-void ValidateActive()
-{
-  if (!alarm.IsManualAlarmON && !alarm.IsCisternaAlarmON && !alarm.IsBomba1AlarmON && !alarm.IsBomba2AlarmON && !alarm.IsNotAvailableBombasAlarmON)
-  {
-    alarm.ActiveTime = 0;
-    alarm.IsActive = false;
-  }
 }
 
 void StartAlarmNotAvailablesBombas()
@@ -120,7 +107,6 @@ void StartAlarmNotAvailablesBombas()
 void StopAlarmNotAvailablesBombas()
 {
   alarm.IsNotAvailableBombasAlarmON = false;
-  ValidateActive();
 }
 
 
@@ -155,8 +141,6 @@ void StopAlarmBomba(Bomba* bomba)
     alarm.IsBomba1AlarmON = false;
   else
     alarm.IsBomba2AlarmON = false;
-
-  ValidateActive();
 }
 
 
@@ -169,13 +153,6 @@ void StartCisternaEmptyAlarm()
 void StopCisternaEmptyAlarm()
 {
   alarm.IsCisternaAlarmON = false;
-  ValidateActive();
-}
-
-
-void StopAllAlarms()
-{
-  ResetAlarm();
 }
 
 void StartManualAlarm()
@@ -185,5 +162,5 @@ void StartManualAlarm()
 
 void StopManualAlarm()
 {
-  alarm.IsManualAlarmON = true;
+  alarm.IsManualAlarmON = false;
 }

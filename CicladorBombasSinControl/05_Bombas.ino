@@ -266,6 +266,15 @@ Bomba* SwapAndActiveBomba()
   return NULL;
 }
 
+bool IsBombaSwapButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  return IsButtonPressed(BOMBA_SWAP_BTN_PIN, state, isPressed, startTime);
+}
+
 
 boolean IsBomba1ContactorClosed()
 {
@@ -273,7 +282,7 @@ boolean IsBomba1ContactorClosed()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Bomba 1 Contactor", BOMBA1_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(BOMBA1_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
@@ -284,7 +293,7 @@ boolean IsBomba2ContactorClosed()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Bomba 2 Contactor", BOMBA2_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(BOMBA2_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
@@ -296,7 +305,7 @@ boolean IsBomba1TermicoOk()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Bomba 1 Contactor", BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
@@ -307,7 +316,7 @@ boolean IsBomba2TermicoOk()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed("Bomba 2 Contactor", BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
