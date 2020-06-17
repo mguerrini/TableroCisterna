@@ -15,11 +15,13 @@ void ReadFase()
     {
       //muestro la pantalla mormal
       ShowMainView();
+      Statistics_FaseError_End();
     }
     else
     {
       //muestro la pantalla de error
       ShowErrorFaseView();
+      Statistics_FaseError_Begin();
     }
 
     automaticFSM.IsFaseOk = currVal;

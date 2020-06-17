@@ -55,7 +55,7 @@ void ReadAlarm()
 
 void ProcessAlarm(int activeTime, int inactiveTime)
 {
-  long t = millis();
+  unsigned long t = millis();
   long delta;
   if (alarm.IsActive)
   {

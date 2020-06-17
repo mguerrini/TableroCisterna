@@ -87,8 +87,12 @@ const byte NONE = 0;
 const byte BOMBA1 = 1;
 const byte BOMBA2 = 2;
 
-// ----- TIPO DE BOTONES -----
+// --- TIPO DE BOTONES ---
 const bool IS_CHANGE_MODE_PULSADOR = true;
+
+// --- Statistics ---
+const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si cambia
+
 
 // ***** MAQUINAS DE ESTADO *****
 
@@ -156,8 +160,8 @@ typedef struct  {
   byte NextMachineState;
 
   long ContactorErrorCounter;
-  long StartError;
-  long Timer;
+  unsigned long StartError;
+  unsigned long Timer;
 } Bomba;
 
 typedef struct {
@@ -166,7 +170,7 @@ typedef struct {
   byte NextState;
 
   boolean IsFaseOk;
-  long StoppingTimer;
+  unsigned long StoppingTimer;
 } AutoFSM;
 
 //--- SENSORES ---
@@ -175,8 +179,8 @@ typedef struct
   bool IsCisternaSensorMinVal;
   bool IsTanqueSensorMinVal;
   bool IsTanqueSensorMaxVal;
-  long CisternaEmptyStartTime;
-  long CisternaEmptyMillis;
+  unsigned long CisternaEmptyStartTime;
+  unsigned long CisternaEmptyMillis;
 } Sensor;
 
 //--- ALARMA ---
@@ -188,14 +192,10 @@ typedef struct  {
   boolean IsNotAvailableBombasAlarmON = false;
 
   //alarma
-  long ActiveTime;
-  long InactiveTime;
+  unsigned long ActiveTime;
+  unsigned long InactiveTime;
   boolean IsActive;
 
-  long StartTimeBomba1;
-  long StartTimeBomba2;
-  long StartCisternaAlarm;
-  long StartTimeIsNotAvailableBombas;
 } Alarm;
 
 typedef struct {
@@ -203,9 +203,17 @@ typedef struct {
   unsigned long Bomba2Uses;
   unsigned long Bomba1TotalMinutes;
   unsigned long Bomba2TotalMinutes;
-  unsigned int Bomba1TotalErrorTermico;
-  unsigned int Bomba2TotalErrorTermico;
-  unsigned int TotalErrorFase;
+  unsigned long Bomba1ErrorTermicoCount;
+  unsigned long Bomba2ErrorTermicoCount;
+
+  unsigned long ErrorFaseTotalMinutes;
+  unsigned long ErrorFaseCount;
+  unsigned long LastTimeSaved;
+
+  unsigned long Bomba1OnTime;
+  unsigned long Bomba2OnTime;
+  unsigned long FaseErrorBeginTime;
+  boolean Changed;
 } Statistics;
 
 // ----- VARIABLES -----
@@ -255,11 +263,12 @@ void setup() {
   SetupCommands();
   Serial.println(F("Commands - Ready"));
 
+  SetupStatistics();
+  Serial.println(F("Statistics - Ready"));
 
   automaticFSM.FromState = AUTO_IDLE;
   automaticFSM.State = AUTO_IDLE;
   automaticFSM.NextState = AUTO_NULL;
-  //automaticFSM.Timer = 0;
 
   Serial.println(F("Process - Ready"));
 }
@@ -294,7 +303,7 @@ void loop() {
 
   //Las bombas se detienen asi que el circuito seguiria normal.......pero no deberia arrancar
   ReadFase();
-  
+
   PrintStatus();
 
   if (IsBombaSwapButtonPressed())

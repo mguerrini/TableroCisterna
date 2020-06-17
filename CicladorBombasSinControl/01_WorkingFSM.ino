@@ -191,7 +191,7 @@ void CicladorLoop()
       if (IsBombaOn(bomba))
       {
         //espero un tiempo prudencial hasta que arranque la bomba
-        long wait = millis() - automaticFSM.StoppingTimer;
+        unsigned long wait = millis() - automaticFSM.StoppingTimer;
         //espero a que inicie....la bomba activa deberia estar en ON.
         if (wait > (2 * BOMBA_TURNING_OFF_TIME))
         {

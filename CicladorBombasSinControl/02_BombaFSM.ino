@@ -1,6 +1,6 @@
 void BombaStateMachine(Bomba* bomba)
 {
-  long wait = 0;
+  unsigned long wait = 0;
   bomba->NextMachineState = FSM_BOMBA_NULL;
   PrintEnterStateBombaFSM(bomba);
 
@@ -14,6 +14,7 @@ void BombaStateMachine(Bomba* bomba)
       {
         bomba->State = BOMBA_STATE_OFF;
         UpdateBombaDisplay(bomba);
+        Statistics_BombaOff(bomba);
         PrintBombaMessage(F("Bomba OFF"));
         break;
       }
@@ -106,6 +107,8 @@ void BombaStateMachine(Bomba* bomba)
         bomba->State = BOMBA_STATE_ON;
         bomba->ContactorErrorCounter = 0; //reseteo los errores del contactor ya que se encendio.
         UpdateBombaDisplay(bomba);
+
+        Statistics_BombaOn(bomba);
         PrintBombaMessage(F("Bomba ON"));
         break;
       }
@@ -262,7 +265,7 @@ void BombaStateMachine(Bomba* bomba)
       //despues de un tiempo deberia salir del error y probar de nuevo
       if (bomba->ContactorErrorCounter < BOMBA_CONTACTOR_ERROR_INTENTOS_MAX)
       {
-        long delta = millis() - bomba->StartError;
+        unsigned long delta = millis() - bomba->StartError;
         if (delta > BOMBA_CONTACTOR_ERROR_INTERVAL)
         {
           StopAlarmBomba(bomba);
@@ -303,6 +306,7 @@ void BombaStateMachine(Bomba* bomba)
         bomba->State = BOMBA_STATE_ERROR_TERMICO;
         bomba->StartError = millis();
         UpdateBombaDisplay(bomba);
+        Statistics_BombaErrorTermico(bomba);
         PrintBombaMessage(F("Error Termico-Start Alarm"));
         break;
       }
