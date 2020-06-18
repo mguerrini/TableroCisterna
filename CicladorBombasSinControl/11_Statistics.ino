@@ -114,6 +114,7 @@ void CleanStatistics()
 
   statistics.ErrorFaseTotalMinutes = 0;
   statistics.ErrorFaseCount = 0;
+  
   statistics.Changed = true;
 
   statistics.Bomba1OnTime = 0;
@@ -123,7 +124,7 @@ void CleanStatistics()
 
 void DoSaveStatistics()
 {
-#ifdef STATISTICS_ENABLED
+#ifdef STATISTICS_SAVE_ENABLED
 
 #endif
 }

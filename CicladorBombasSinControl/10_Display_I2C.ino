@@ -6,10 +6,16 @@
 
 LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-boolean IsMainViewActive = true;
-boolean IsErrorFaseViewActive = false;
-boolean IsInfoViewActive = false;
-byte ActiveInfoViewNumber = 0;
+typedef struct {
+  boolean IsMainViewActive = true;
+  boolean IsErrorFaseViewActive = false;
+  boolean IsInfoViewActive = false;
+
+  byte InfoViewNumberActive = 0;
+  unsigned long InfoViewNumberActiveTime = 0;
+} View;
+
+View view = {};
 
 void SetupDisplay()
 {
@@ -19,32 +25,51 @@ void SetupDisplay()
   lcd.clear();
   lcd.backlight();
 
-  IsMainViewActive = true;
-  IsErrorFaseViewActive = false;
-  IsInfoViewActive = false;
-  ActiveInfoViewNumber = 0;
+  view.IsMainViewActive = true;
+  view.IsErrorFaseViewActive = false;
+  view.IsInfoViewActive = false;
+
+  view.InfoViewNumberActive = 0;
+  view.InfoViewNumberActiveTime = 0;
 
   PrintInitialText();
 }
 
 //---------------------- VISTAS ----------------------
 
+void UpdateView()
+{
+  if (!view.IsInfoViewActive)
+    return;
+
+  unsigned long curr = millis();
+  unsigned long delta = curr - view.InfoViewNumberActiveTime;
+
+  if (delta > INFO_VIEW_VISIBLE_TIME)
+  {
+    ShowMainView();
+  }
+}
+
 void ShowErrorFaseView()
 {
+  view.IsMainViewActive = false;
+  view.IsErrorFaseViewActive = true;
+  view.IsInfoViewActive = false;
+
   lcd.clear();
   lcd.setCursor(5, 1);
   lcd.print(F("ERROR"));
-  lcd.setCursor(5, 2);
-  lcd.print(F("FASE CAIDA"));
-
-
-  IsMainViewActive = false;
-  IsErrorFaseViewActive = true;
-  IsInfoViewActive = false;
+  lcd.setCursor(3, 2);
+  lcd.print(F("FALLA DE FASE"));
 }
 
 void ShowMainView()
 {
+  view.IsMainViewActive = true;
+  view.IsErrorFaseViewActive = false;
+  view.IsInfoViewActive = false;
+
   lcd.clear();
   PrintInitialText();
   UpdateBomba1Display();
@@ -52,27 +77,75 @@ void ShowMainView()
 
   UpdateCisternaDisplay();
   UpdateTanqueDisplay();
-
-  IsMainViewActive = true;
-  IsErrorFaseViewActive = false;
-  IsInfoViewActive = false;
-
 }
 
 void ShowInfoView()
 {
-  if (IsInfoViewActive)
+  if (!view.IsInfoViewActive)
   {
-    //me fijo cual es la ventana activa y muestro la siguiente.
+    view.IsMainViewActive = false;
+    view.IsErrorFaseViewActive = false;
+    view.IsInfoViewActive = true;
+
+    view.InfoViewNumberActive = 0;
   }
   else
-    ActiveInfoViewNumber = 0;
+  {
+    view.InfoViewNumberActive = view.InfoViewNumberActive + 1;
+  }
 
+  ShowNextInfoView();
 
-  IsMainViewActive = false;
-  IsErrorFaseViewActive = false;
-  IsInfoViewActive = true;
+  view.InfoViewNumberActiveTime =  millis();
+}
+/*
+  statistics.Bomba1Uses = 0;
+  statistics.Bomba2Uses = 0;
+  statistics.Bomba1TotalMinutes = 0;
+  statistics.Bomba2TotalMinutes = 0;
+  statistics.Bomba1ErrorTermicoCount = 0;
+  statistics.Bomba2ErrorTermicoCount = 0;
 
+  statistics.ErrorFaseTotalMinutes = 0;
+  statistics.ErrorFaseCount = 0;
+  
+  statistics.Changed = true;
+
+  statistics.Bomba1OnTime = 0;
+  statistics.Bomba2OnTime = 0;
+  statistics.FaseErrorBeginTime = 0;
+*/
+void ShowNextInfoView()
+{
+  switch (view.InfoViewNumberActive)
+  {
+    case 0:
+      lcd.setCursor(0, 0);
+      lcd.print(F("***** Equipo 1 *****"));
+      statistics.Bomba1Uses;
+  statistics.Bomba1TotalMinutes = 0;
+    statistics.Bomba1ErrorTermicoCount = 0;
+      
+      break;
+
+    case 1:
+      lcd.setCursor(0, 0);
+      lcd.print(F("***** Equipo 2 *****"));
+        statistics.Bomba2Uses = 0;
+  statistics.Bomba2TotalMinutes = 0;
+  statistics.Bomba2ErrorTermicoCount = 0;
+
+      break;
+
+    case 2:
+      statistics.ErrorFaseTotalMinutes = 0;
+  statistics.ErrorFaseCount = 0;
+  
+      break;
+      
+    case 3:
+      break;
+  }
 }
 
 void ShowBomba1InfoView()
@@ -89,8 +162,6 @@ void ShowOtherInfoView()
 {
 
 }
-
-
 
 
 // -------- ACTUALIZACIONES ---------
@@ -115,27 +186,33 @@ void UpdateBomba2Display()
 
 void UpdateBombaDisplay(bool enabled, int state, int row)
 {
+  if (!view.IsMainViewActive)
+    return;
+
   lcd.setCursor(6, row);
 
   if (!enabled)
-    lcd.print(F("Deshabilitada"));
+    lcd.print  (F("Fuera de línea"));
   else
   {
     if (state == BOMBA_STATE_ON)
-      lcd.print(F("ON           "));
+      lcd.print(F("Encendida     "));
     else if (state == BOMBA_STATE_OFF)
-      lcd.print(F("OFF          "));
+      lcd.print(F("Apagada       "));
     else if (state == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
-      lcd.print(F("Err.Contactor"));
+      lcd.print(F("Err.Contactor "));
     else if (state == BOMBA_STATE_ERROR_CONTACTOR_CERRADO)
-      lcd.print(F("Err.Contactor"));
+      lcd.print(F("Err.Contactor "));
     else if (state == BOMBA_STATE_ERROR_TERMICO)
-      lcd.print(F("Err.Termico  "));
+      lcd.print(F("Err.Termico   "));
   }
 }
 
 void UpdateCisternaDisplay()
 {
+  if (!view.IsMainViewActive)
+    return;
+
   lcd.setCursor(9, 3);
   if (sensores.IsCisternaSensorMinVal)
     lcd.print(F("Minimo"));
@@ -145,11 +222,19 @@ void UpdateCisternaDisplay()
 
 void UpdateTanqueDisplay()
 {
+  if (!view.IsMainViewActive)
+    return;
+
   lcd.setCursor(7, 2);
   if (sensores.IsTanqueSensorMinVal)
-    lcd.print(F("Minimo"));
+  {
+    if (IsBombaOn(&bomba1) || IsBombaOn(&bomba2))
+      lcd.print(F("Cargando   "));
+    else
+      lcd.print(F("Minimo     "));
+  }
   else
-    lcd.print(F("Normal"));
+    lcd.print(F("Descargando"));
 }
 
 void UpdateDisplayToManualMode()
@@ -164,6 +249,9 @@ void UpdateDisplayToAutoMode()
 
 void UpdateDisplayMode(const char* mode)
 {
+  if (!view.IsMainViewActive)
+    return;
+
   lcd.setCursor(19, 0);
   lcd.print(mode);
 }
@@ -171,6 +259,9 @@ void UpdateDisplayMode(const char* mode)
 
 void UpdateActiveBombaDisplay()
 {
+  if (!view.IsMainViewActive)
+    return;
+
   if (bomba1.IsActive)
   {
     lcd.setCursor(3, 0);
@@ -197,8 +288,11 @@ void UpdateActiveBombaDisplay()
 
 void PrintInitialText()
 {
+  if (!view.IsMainViewActive)
+    return;
+
   lcd.setCursor(19, 0);
-  if (_mode == AUTO)
+  if (IsAutomaticMode() == AUTO)
     lcd.print(F("A"));
   else
     lcd.print(F("M"));

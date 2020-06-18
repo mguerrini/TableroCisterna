@@ -8,7 +8,7 @@
 //ALARMAS
 //#define ALARM_BUZZER
 #define ALARM_LED
-
+//#define STATISTICS_SAVE_ENABLED
 
 const boolean DEBUG = true;
 
@@ -68,6 +68,8 @@ const byte LED_PIN = 2;
 
 
 // ************ CONSTANTES **************
+
+#define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
 
 //--- MODO ---
 const byte MANUAL = 0;
@@ -169,6 +171,8 @@ typedef struct {
   byte State;
   byte NextState;
 
+  byte Mode;
+  
   boolean IsFaseOk;
   unsigned long StoppingTimer;
 } AutoFSM;
@@ -217,14 +221,13 @@ typedef struct {
 } Statistics;
 
 // ----- VARIABLES -----
-byte _mode = AUTO; //0 = Manual, 1=Automatico
-
 Sensor sensores = {false, false, false};
 Bomba bomba1 = {BOMBA1};
 Bomba bomba2 = {BOMBA2};
 Alarm alarm = {};
-AutoFSM automaticFSM = {};
 Statistics statistics = { };
+AutoFSM automaticFSM = {};
+
 
 //**************************************************//
 //                     SETUP
@@ -233,7 +236,7 @@ void setup() {
   //start serial connection
   Serial.begin(115200);
 
-  _mode = AUTO;
+  automaticFSM.Mode = AUTO;
 
   SetupPins();
   Serial.println(F("Pins - Ready"));
@@ -311,6 +314,9 @@ void loop() {
     SwapAndActiveBomba();
   }
 
+  //actualizo la vista si corresponde
+  UpdateView();
+
   if (DEBUG)
   {
     if (!IsContinueButtonPressed())
@@ -321,6 +327,8 @@ void loop() {
 
   // put your main code here, to run repeatedly:
   CicladorLoop();
+
+  SaveStatistics();
 }
 
 //************************************************//

@@ -2,14 +2,14 @@
 // --- MODO ---
 void SetupMode()
 {
-  _mode = AUTO;
+  automaticFSM.Mode = AUTO;
   ReadExecutionMode();
   digitalWrite(MODO_PIN, HIGH);
 }
 
 void ReadExecutionMode()
 {
-  byte currMode = _mode;
+  byte currMode = automaticFSM.Mode;
 
   if (IsChangeModeButtonPressed(IS_CHANGE_MODE_PULSADOR))
   {
@@ -18,17 +18,17 @@ void ReadExecutionMode()
     //pulsador...
     if (IsAutomaticMode())
     {
-      _mode = MANUAL;
+        automaticFSM.Mode = MANUAL;
     }
     else
     {
-      _mode = AUTO;
+      automaticFSM.Mode = AUTO;
     }
      
   }
 
 
-  if (currMode != _mode)
+  if (currMode != automaticFSM.Mode)
   {
     if (IsAutomaticMode())
     {
@@ -53,19 +53,19 @@ void ReadExecutionMode()
 
 bool IsAutomaticMode()
 {
-  return _mode == AUTO;
+  return automaticFSM.Mode == AUTO;
 }
 
 void ChangeToAutomaticMode()
 {
-  _mode = AUTO;
+  automaticFSM.Mode = AUTO;
 
   UpdateDisplayToAutoMode();
 }
 
 void ChangeToManualMode()
 {
-  _mode = MANUAL;
+  automaticFSM.Mode = MANUAL;
 
   UpdateDisplayToManualMode();
 }
