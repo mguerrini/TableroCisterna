@@ -64,7 +64,6 @@ boolean IsResetButtonPressed()
   return IsButtonPressed(RESET_BTN_PIN, state, isPressed, startTime);
 }
 
-
 boolean IsGetStatusButtonPressed()
 {
   static unsigned long startTime = 0;

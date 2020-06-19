@@ -95,13 +95,6 @@ void ReadBombaSensors(Bomba* bomba)
 
 void ReadEnabledBombas()
 {
-  /*
-    bomba1.RequestEnabled = false;
-    bomba1.RequestDisabled = false;
-    bomba2.RequestEnabled = false;
-    bomba2.RequestDisabled = false;
-  */
-
   bool pressed1 = IsBomba1EnabledButtonPressed();
   bool pressed2 = IsBomba2EnabledButtonPressed();
 
@@ -233,7 +226,7 @@ void ActivateBomba(Bomba* bomba)
     bomba1.IsActive = true;
     bomba1.Uses = 0;
 
-    digitalWrite(BOMBA_SWAP_PIN, BOMBA1_ACTIVE);
+    digitalWrite(BOMBA_SWAP_RELE_PIN, BOMBA1_ACTIVE);
   }
   else
   {
@@ -241,7 +234,7 @@ void ActivateBomba(Bomba* bomba)
     bomba2.IsActive = true;
     bomba2.Uses = 0;
 
-    digitalWrite(BOMBA_SWAP_PIN, BOMBA2_ACTIVE);
+    digitalWrite(BOMBA_SWAP_RELE_PIN, BOMBA2_ACTIVE);
   }
 
   UpdateActiveBombaDisplay();

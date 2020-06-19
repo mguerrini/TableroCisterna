@@ -4,7 +4,9 @@ void SetupMode()
 {
   automaticFSM.Mode = AUTO;
   ReadExecutionMode();
-  digitalWrite(MODO_PIN, HIGH);
+#ifndef DEBUG
+  digitalWrite(MODO_LED_PIN, HIGH);
+#endif
 }
 
 void ReadExecutionMode()
@@ -34,17 +36,22 @@ void ReadExecutionMode()
     {
       Serial.println(F("Change Mode -> AUTO"));
       StopManualAlarm();
-
-      digitalWrite(MODO_PIN, HIGH);
+#ifndef DEBUG
+      digitalWrite(MODO_LED_PIN, HIGH);
+#else
       UpdateDisplayToAutoMode();
+#endif      
     }
     else
     {
       Serial.println(F("Change Mode -> MANUAL"));
       StartManualAlarm();
 
-      digitalWrite(MODO_PIN, LOW);
+#ifndef DEBUG
+      digitalWrite(MODO_LED_PIN, LOW);
+#else
       UpdateDisplayToManualMode();
+#endif      
     }
   }
 }
@@ -76,7 +83,7 @@ boolean IsChangeModeButtonPressed(bool isPulsadorMode)
   static boolean state;
   static boolean isPressed;
 
-  boolean pulsador = IsButtonPressed( CHANGE_MODE_BTN_PIN, state, isPressed, startTime);
+  boolean pulsador = IsButtonPressed(CHANGE_MODE_BTN_PIN, state, isPressed, startTime);
 
   if (isPulsadorMode)
     return pulsador;

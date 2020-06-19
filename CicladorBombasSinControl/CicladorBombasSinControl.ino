@@ -10,62 +10,61 @@
 #define ALARM_LED
 //#define STATISTICS_SAVE_ENABLED
 
-#define DEBUG true
+#define DEBUG 
 
 // ************ PINES **************
 
 // --- DEBUG ---
-#define DEBUG_CONTINUE_PIN 4
-#define GET_STATUS_AS_BUTTON
+#define DEBUG_CONTINUE_PIN A1
 
-#ifdef GET_STATUS_AS_BUTTON
-#define GET_STATUS_BTN_PIN 2
-#endif
+//#define GET_STATUS_BUTTON_ENABLED
+#define GET_STATUS_BTN_PIN 2 //no se usa si no esta definido
 
 // --- BUTTON ---
-
-#define BOMBA_SWAP_BTN_PIN  A2
-#define CHANGE_MODE_BTN_PIN  A1
-#define RESET_BTN_PIN  A3
-#define VIEW_INFO_PIN  2
+#define BOMBA_SWAP_BTN_PIN 12
+#define CHANGE_MODE_BTN_PIN 13
+#define RESET_BTN_PIN A0
+#define VIEW_INFO_PIN 11
 
 //--- INVERSOR ---
 //salida al rele que activa el Rele de los contactores
-#define BOMBA_SWAP_PIN  A0
+#define BOMBA_SWAP_RELE_PIN A2
 //valor para Bomba1 Activa
 #define BOMBA1_ACTIVE  HIGH
 //valor para Bomba2 Activa
 #define BOMBA2_ACTIVE  LOW
 
 //--- ALARMA ---
-#define ALARM_PIN 3
+#define ALARM_PIN 10
 //#define ALARM_AUX_ENBALED
 #ifdef ALARM_AUX_ENBALED
-#define ALARM_PIN_AUX  4
+#define ALARM_PIN_AUX 0
 #endif
 
 // --- SENSOR FASE ---
-#define FASE_PIN  3
-
-// --- SENSORES BOMBAS ---
-#define BOMBA1_ENABLE_PIN  5
-#define BOMBA2_ENABLE_PIN  6
-
-#define BOMBA1_CONTACTOR_RETORNO_PIN  7
-#define BOMBA2_CONTACTOR_RETORNO_PIN  8
-
-#define BOMBA1_TERMICO_RETORNO_PIN  9
-#define BOMBA2_TERMICO_RETORNO_PIN  10
-
-// --- SENSOR DE NIVELES ---
-#define CISTERNA_EMPTY_PIN  11
-#define TANQUE_EMPTY_FULL_PIN  12
+#define FASE_PIN A3
 
 //--- MODO ---
-#define MODO_PIN 13
+#ifndef DEBUG
+#define MODO_LED_PIN A1
+#endif
+
+// --- SENSORES BOMBAS ---
+#define BOMBA1_ENABLE_PIN  2
+#define BOMBA2_ENABLE_PIN  3
+
+#define BOMBA1_CONTACTOR_RETORNO_PIN  4
+#define BOMBA2_CONTACTOR_RETORNO_PIN  5
+
+#define BOMBA1_TERMICO_RETORNO_PIN  6
+#define BOMBA2_TERMICO_RETORNO_PIN  7
+
+// --- SENSOR DE NIVELES ---
+#define CISTERNA_EMPTY_PIN  8
+#define TANQUE_EMPTY_FULL_PIN  9
 
 // --- TESTIGO BUTONES ---
-#define TESTIGO_LED
+//#define TESTIGO_LED
 #ifdef TESTIGO_LED
 #define LED_PIN 2
 #endif
@@ -315,19 +314,19 @@ void loop() {
   //actualizo la vista si corresponde
   UpdateView();
 
-  if (DEBUG)
-  {
-    if (!IsContinueButtonPressed())
-      return;
-    else
-      Serial.println(F("Continue"));
-  }
+#ifdef DEBUG
+  if (!IsContinueButtonPressed())
+    return;
+  else
+    Serial.println(F("Continue"));
+#endif
 
   // put your main code here, to run repeatedly:
   CicladorLoop();
 
   SaveStatistics();
 }
+
 
 //************************************************//
 //                 AUXILIARES
@@ -350,7 +349,7 @@ void SetupPins()
   pinMode(VIEW_INFO_PIN, INPUT_PULLUP);
 
   // --- INVERSOR ---
-  pinMode(BOMBA_SWAP_PIN, OUTPUT);
+  pinMode(BOMBA_SWAP_RELE_PIN, OUTPUT);
 
   // --- ALARMA ---
   pinMode(ALARM_PIN, OUTPUT);
@@ -374,8 +373,9 @@ void SetupPins()
   pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
 
   //--- MODO ---
-  pinMode(MODO_PIN, OUTPUT);
-
+#ifndef DEBUG  
+  pinMode(MODO_LED_PIN, OUTPUT);
+#endif
   // --- TESTIGO BUTONES ---
 #ifdef TESTIGO_LED
   pinMode(LED_PIN, OUTPUT);
@@ -385,10 +385,12 @@ void SetupPins()
 
 void PrintStatus()
 {
+  #ifdef GET_STATUS_BUTTON_ENABLED
   if (!IsGetStatusButtonPressed())
     return;
 
   DoPrintStatus();
+  #endif
 }
 
 void DoPrintStatus()
