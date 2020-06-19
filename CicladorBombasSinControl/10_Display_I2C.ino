@@ -108,7 +108,7 @@ void ShowInfoView()
 
   statistics.ErrorFaseTotalMinutes = 0;
   statistics.ErrorFaseCount = 0;
-  
+
   statistics.Changed = true;
 
   statistics.Bomba1OnTime = 0;
@@ -120,47 +120,72 @@ void ShowNextInfoView()
   switch (view.InfoViewNumberActive)
   {
     case 0:
+      lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print(F("***** Equipo 1 *****"));
-      statistics.Bomba1Uses;
-  statistics.Bomba1TotalMinutes = 0;
-    statistics.Bomba1ErrorTermicoCount = 0;
-      
+      lcd.print(F("***** Bomba 1 ******"));
+      lcd.print(F("Usos:               "));
+      lcd.setCursor(6, 1);
+      lcd.print(statistics.Bomba1Uses);
+
+      lcd.setCursor(0, 2);
+      lcd.print(F("Minutos total:      "));
+      lcd.setCursor(14, 2);
+      lcd.print(statistics.Bomba1TotalMinutes);
+
+      lcd.setCursor(0, 3);
+      lcd.print(F("Errores termico:    "));
+      lcd.setCursor(16, 3);
+      lcd.print(statistics.Bomba1ErrorTermicoCount);
       break;
 
     case 1:
+      lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print(F("***** Equipo 2 *****"));
-        statistics.Bomba2Uses = 0;
-  statistics.Bomba2TotalMinutes = 0;
-  statistics.Bomba2ErrorTermicoCount = 0;
+      lcd.print(F("***** Bomba 2 ******"));
+      lcd.print(F("Usos:               "));
+      lcd.setCursor(6, 1);
+      lcd.print(statistics.Bomba2Uses);
 
-      break;
+      lcd.setCursor(0, 2);
+      lcd.print(F("Minutos total:      "));
+      lcd.setCursor(14, 2);
+      lcd.print(statistics.Bomba2TotalMinutes);
+
+      lcd.setCursor(0, 3);
+      lcd.print(F("Errores termico:    "));
+      lcd.setCursor(16, 3);
+      lcd.print(statistics.Bomba2ErrorTermicoCount);
+      return;
 
     case 2:
-      statistics.ErrorFaseTotalMinutes = 0;
-  statistics.ErrorFaseCount = 0;
-  
-      break;
-      
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(F("**** Generales *****"));
+      lcd.setCursor(0, 1);
+      lcd.print(F("Bomba seleccionada:"));
+      lcd.setCursor(0, 1);
+      lcd.print(GetActiveBombaNumber());
+
+      lcd.setCursor(0, 2);
+      lcd.print(F("Ciclos seguidos:"));
+      lcd.setCursor(16, 2);
+      lcd.print(GetActiveBombaUses());
+      return;
+
     case 3:
-      break;
+      lcd.setCursor(0, 1);
+      lcd.print(F("Errores Fase:       "));
+      lcd.setCursor(13, 1);
+      lcd.print(statistics.ErrorFaseCount);
+
+      lcd.setCursor(0, 2);
+      lcd.print(F("Min. sin fase:      "));
+      lcd.setCursor(14, 2);
+      lcd.print(statistics.ErrorFaseTotalMinutes);
+      return;
   }
-}
 
-void ShowBomba1InfoView()
-{
-
-}
-
-void ShowBomba2InfoView()
-{
-
-}
-
-void ShowOtherInfoView()
-{
-
+  ShowMainView();
 }
 
 

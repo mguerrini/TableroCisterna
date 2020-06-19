@@ -1,10 +1,8 @@
 void SetupStatistics()
 {
-  statistics.LastTimeSaved = millis();
-  statistics.Bomba1OnTime = 0;
-  statistics.Bomba2OnTime = 0;
-
+  CleanStatistics();
   ReadStatistics();
+  statistics.LastTimeSaved = millis();
 }
 
 

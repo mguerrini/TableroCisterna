@@ -10,60 +10,64 @@
 #define ALARM_LED
 //#define STATISTICS_SAVE_ENABLED
 
-const boolean DEBUG = true;
+#define DEBUG true
 
 // ************ PINES **************
 
 // --- DEBUG ---
-const byte DEBUG_CONTINUE_PIN = 4;
+#define DEBUG_CONTINUE_PIN 4
 #define GET_STATUS_AS_BUTTON
+
 #ifdef GET_STATUS_AS_BUTTON
-const byte GET_STATUS_BTN_PIN = 2;
+#define GET_STATUS_BTN_PIN 2
 #endif
 
 // --- BUTTON ---
 
-const byte BOMBA_SWAP_BTN_PIN = A2;
-const byte CHANGE_MODE_BTN_PIN = A1;
-const byte RESET_BTN_PIN = A3;
-const byte VIEW_INFO_PIN = 2;
+#define BOMBA_SWAP_BTN_PIN  A2
+#define CHANGE_MODE_BTN_PIN  A1
+#define RESET_BTN_PIN  A3
+#define VIEW_INFO_PIN  2
 
 //--- INVERSOR ---
-const byte BOMBA_SWAP_PIN = A0; //salida al rele que activa el Rele de los contactores
-const byte BOMBA1_ACTIVE = HIGH; //valor para Bomba1 Activa
-const byte BOMBA2_ACTIVE = LOW;  //valor para Bomba2 Activa
+//salida al rele que activa el Rele de los contactores
+#define BOMBA_SWAP_PIN  A0
+//valor para Bomba1 Activa
+#define BOMBA1_ACTIVE  HIGH
+//valor para Bomba2 Activa
+#define BOMBA2_ACTIVE  LOW
 
 //--- ALARMA ---
-const byte ALARM_PIN = 3;
+#define ALARM_PIN 3
 //#define ALARM_AUX_ENBALED
 #ifdef ALARM_AUX_ENBALED
-const byte ALARM_PIN_AUX = 4;
+#define ALARM_PIN_AUX  4
 #endif
 
 // --- SENSOR FASE ---
-const byte FASE_PIN = 3;
+#define FASE_PIN  3
 
 // --- SENSORES BOMBAS ---
-const byte BOMBA1_ENABLE_PIN = 5;
-const byte BOMBA2_ENABLE_PIN = 6;
+#define BOMBA1_ENABLE_PIN  5
+#define BOMBA2_ENABLE_PIN  6
 
-const byte BOMBA1_CONTACTOR_RETORNO_PIN = 7;
-const byte BOMBA2_CONTACTOR_RETORNO_PIN = 8;
+#define BOMBA1_CONTACTOR_RETORNO_PIN  7
+#define BOMBA2_CONTACTOR_RETORNO_PIN  8
 
-const byte BOMBA1_TERMICO_RETORNO_PIN = 9;
-const byte BOMBA2_TERMICO_RETORNO_PIN = 10;
+#define BOMBA1_TERMICO_RETORNO_PIN  9
+#define BOMBA2_TERMICO_RETORNO_PIN  10
 
 // --- SENSOR DE NIVELES ---
-const byte CISTERNA_EMPTY_PIN = 11;
-const byte TANQUE_EMPTY_FULL_PIN = 12;
+#define CISTERNA_EMPTY_PIN  11
+#define TANQUE_EMPTY_FULL_PIN  12
 
 //--- MODO ---
-const byte MODO_PIN = 13;
+#define MODO_PIN 13
 
 // --- TESTIGO BUTONES ---
 #define TESTIGO_LED
 #ifdef TESTIGO_LED
-const byte LED_PIN = 2;
+#define LED_PIN 2
 #endif
 
 
@@ -72,25 +76,25 @@ const byte LED_PIN = 2;
 #define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
 
 //--- MODO ---
-const byte MANUAL = 0;
-const byte AUTO = 1;
+#define MANUAL 0
+#define AUTO 1
 
 // --- BOMBAS ---
-const byte BOMBA_USES_MAX = 1;
-const long BOMBA_TURNING_ON_TIME = 5000; //tiempo en milisegundos que espera a que el contactor avise que se cerro.
-const long BOMBA_TURNING_OFF_TIME = 5000; //tiempo que espera hasta que el contactor avise que se abrio.
-const long BOMBA_CONTACTOR_ERROR_INTENTOS_MAX = 100; //Maxima cantidad de intentos
-const long BOMBA_CONTACTOR_ERROR_INTERVAL = 10000; //Intervalo de tiempo entre intentos de recuperar el contactor
+#define BOMBA_USES_MAX 1
+#define BOMBA_TURNING_ON_TIME 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
+#define BOMBA_TURNING_OFF_TIME 5000 //tiempo que espera hasta que el contactor avise que se abrio.
+#define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 100 //Maxima cantidad de intentos
+#define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
 
 // --- CISTERNA ---
-const long CISTERNA_EMPTY_MAX_TIME = 10000 * 1; //tiempo que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
+#define CISTERNA_EMPTY_MAX_TIME 10000 //tiempo (milisegundos) que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
 
-const byte NONE = 0;
-const byte BOMBA1 = 1;
-const byte BOMBA2 = 2;
+#define NONE 0
+#define BOMBA1 1
+#define BOMBA2 2
 
 // --- TIPO DE BOTONES ---
-const bool IS_CHANGE_MODE_PULSADOR = true;
+#define IS_CHANGE_MODE_PULSADOR true
 
 // --- Statistics ---
 const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si cambia
@@ -99,53 +103,45 @@ const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si c
 // ***** MAQUINAS DE ESTADO *****
 
 //--- BOMBA ---
-enum BombaStates
-{
-  BOMBA_STATE_ON = 1,
-  BOMBA_STATE_OFF = 2,
-  BOMBA_STATE_ERROR_CONTACTOR_ABIERTO = -1,
-  BOMBA_STATE_ERROR_CONTACTOR_CERRADO = -2,
-  BOMBA_STATE_ERROR_TERMICO = -3
-};
+#define BOMBA_STATE_ON 1
+#define BOMBA_STATE_OFF 2
+#define BOMBA_STATE_ERROR_CONTACTOR_ABIERTO -1
+#define BOMBA_STATE_ERROR_CONTACTOR_CERRADO -2
+#define BOMBA_STATE_ERROR_TERMICO -3
 
 
 //--- MAQUINAS DE ESTADO ---
-//enum BombaMachineStates {
-const byte FSM_BOMBA_OFF = 1;
-const byte FSM_BOMBA_TURNING_ON = 2;
-const byte FSM_BOMBA_ON = 3;
-const byte FSM_BOMBA_TURNING_OFF = 4;
-const byte FSM_BOMBA_ERROR_CONTACTOR_CERRADO = 5;
-const byte FSM_BOMBA_ERROR_CONTACTOR_ABIERTO = 6;
-const byte FSM_BOMBA_ERROR_TERMICO = 7;
-const byte FSM_BOMBA_DISABLING = 8;
-const byte FSM_BOMBA_DISABLED = 9;
-const byte FSM_BOMBA_ENABLING = 10;
-const byte FSM_BOMBA_NULL = 0;
-
-//};
+#define FSM_BOMBA_OFF 1
+#define FSM_BOMBA_TURNING_ON 2
+#define FSM_BOMBA_ON 3
+#define FSM_BOMBA_TURNING_OFF 4
+#define FSM_BOMBA_ERROR_CONTACTOR_CERRADO 5
+#define FSM_BOMBA_ERROR_CONTACTOR_ABIERTO 6
+#define FSM_BOMBA_ERROR_TERMICO 7
+#define FSM_BOMBA_DISABLING 8
+#define FSM_BOMBA_DISABLED 9
+#define FSM_BOMBA_ENABLING 10
+#define FSM_BOMBA_NULL 0
 
 //--- MODO AUTOMATICO ESTADOS ---
-//enum AutomaticModeStates {
-const byte AUTO_IDLE = 1;
-const byte AUTO_SELECTING_BOMBA = 2;
-const byte AUTO_NOT_AVAILABLES_BOMBAS = 3;
-const byte AUTO_STARTING = 4;
-const byte AUTO_WORKING = 5;
-const byte AUTO_STOPPING = 6;
-const byte AUTO_TANQUE_FULL = 7;
-const byte AUTO_STOPPING_BOMBA = 8;
-const byte AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE = 9;
-const byte AUTO_CHANGE_BOMBA_FROM_TIMEOUT = 10;
-const byte AUTO_CHANGE_BOMBA = 11;
-const byte AUTO_ERROR_BOMBA_WORKING = 12;
-const byte AUTO_NULL = 0;
-//};
+#define AUTO_IDLE 1
+#define AUTO_SELECTING_BOMBA 2
+#define AUTO_NOT_AVAILABLES_BOMBAS 3
+#define AUTO_STARTING 4
+#define AUTO_WORKING 5
+#define AUTO_STOPPING 6
+#define AUTO_TANQUE_FULL 7
+#define AUTO_STOPPING_BOMBA 8
+#define AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE 9
+#define AUTO_CHANGE_BOMBA_FROM_TIMEOUT 10
+#define AUTO_CHANGE_BOMBA 11
+#define AUTO_ERROR_BOMBA_WORKING 12
+#define AUTO_NULL 0
 
 typedef struct  {
   byte Number;
   bool IsEnabled;
-  BombaStates State; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
+  byte State; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
 
   bool IsActive;
   int Uses;
@@ -172,7 +168,7 @@ typedef struct {
   byte NextState;
 
   byte Mode;
-  
+
   boolean IsFaseOk;
   unsigned long StoppingTimer;
 } AutoFSM;
@@ -209,6 +205,8 @@ typedef struct {
   unsigned long Bomba2TotalMinutes;
   unsigned long Bomba1ErrorTermicoCount;
   unsigned long Bomba2ErrorTermicoCount;
+  unsigned long Bomba1FillingTime;
+  unsigned long Bomba2FillingTime;
 
   unsigned long ErrorFaseTotalMinutes;
   unsigned long ErrorFaseCount;

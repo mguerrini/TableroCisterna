@@ -175,6 +175,22 @@ void ReadEnabledBombas()
   }
 }
 
+byte GetActiveBombaNumber()
+{
+  if (bomba1.IsActive)
+    return BOMBA1;
+  else
+    return BOMBA2;
+}
+
+byte GetActiveBombaUses()
+{
+  if (bomba1.IsActive)
+    return bomba1.Uses;
+  else
+    return bomba2.Uses;
+}
+
 bool IsBombaOff(Bomba* bomba)
 {
   return bomba->State == BOMBA_STATE_OFF;
