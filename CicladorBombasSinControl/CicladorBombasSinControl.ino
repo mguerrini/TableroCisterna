@@ -10,21 +10,25 @@
 #define ALARM_LED
 //#define STATISTICS_SAVE_ENABLED
 
-#define DEBUG 
 
 // ************ PINES **************
 
 // --- DEBUG ---
-#define DEBUG_CONTINUE_PIN A1
+#define DEBUG 
+#ifdef DEBUG
+  #define DEBUG_CONTINUE_PIN A3
+#endif  
 
 //#define GET_STATUS_BUTTON_ENABLED
-#define GET_STATUS_BTN_PIN 2 //no se usa si no esta definido
+#ifdef GET_STATUS_BUTTON_ENABLED
+  #define GET_STATUS_BTN_PIN 2 //no se usa si no esta definido
+#endif
 
 // --- BUTTON ---
-#define BOMBA_SWAP_BTN_PIN 12
-#define CHANGE_MODE_BTN_PIN 13
-#define RESET_BTN_PIN A0
-#define VIEW_INFO_PIN 11
+#define BOMBA_SWAP_BTN_PIN 12  //Cambiar bomba seleccionada
+#define CHANGE_MODE_BTN_PIN 13 //selector Manual / Automatico
+#define RESET_BTN_PIN 11
+#define VIEW_INFO_PIN A0 //Muestra información estadisticas y valores varios
 
 //--- INVERSOR ---
 //salida al rele que activa el Rele de los contactores
@@ -36,17 +40,19 @@
 
 //--- ALARMA ---
 #define ALARM_PIN 10
+
 //#define ALARM_AUX_ENBALED
 #ifdef ALARM_AUX_ENBALED
-#define ALARM_PIN_AUX 0
+  #define ALARM_PIN_AUX 0
 #endif
 
 // --- SENSOR FASE ---
-#define FASE_PIN A3
+#define FASE_ERROR_PIN A1
 
 //--- MODO ---
 #ifndef DEBUG
-#define MODO_LED_PIN A1
+  #define MODO_OUTPUT_ENABLED 
+  #define MODO_LED_PIN A3
 #endif
 
 // --- SENSORES BOMBAS ---
@@ -66,7 +72,7 @@
 // --- TESTIGO BUTONES ---
 //#define TESTIGO_LED
 #ifdef TESTIGO_LED
-#define LED_PIN 2
+  #define LED_PIN 2
 #endif
 
 
@@ -87,6 +93,9 @@
 
 // --- CISTERNA ---
 #define CISTERNA_EMPTY_MAX_TIME 10000 //tiempo (milisegundos) que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
+
+// --- TANQUE ---
+#define TANQUE_TIME_TO_FULL 10000 //tiempo inicial para el llenado del tanque. Luego calcula el tiempo promedio por tanque y le suma u porcentage
 
 #define NONE 0
 #define BOMBA1 1
@@ -338,7 +347,7 @@ void SetupPins()
 {
   // --- DEBUG ---
   pinMode(DEBUG_CONTINUE_PIN, INPUT_PULLUP);
-#ifdef GET_STATUS_AS_BUTTON
+#ifdef GET_STATUS_BUTTON_ENABLED
   pinMode(GET_STATUS_BTN_PIN, INPUT_PULLUP);
 #endif
 
@@ -358,7 +367,7 @@ void SetupPins()
 #endif
 
   // --- SENSOR FASE ---
-  pinMode(FASE_PIN, INPUT_PULLUP);
+  pinMode(FASE_ERROR_PIN, INPUT_PULLUP);
 
   // --- SENSORES BOMBAS ---
   pinMode(BOMBA1_ENABLE_PIN, INPUT_PULLUP);
@@ -373,7 +382,7 @@ void SetupPins()
   pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
 
   //--- MODO ---
-#ifndef DEBUG  
+#ifdef MODO_OUTPUT_ENABLED  
   pinMode(MODO_LED_PIN, OUTPUT);
 #endif
   // --- TESTIGO BUTONES ---

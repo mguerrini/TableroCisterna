@@ -4,7 +4,8 @@ void SetupMode()
 {
   automaticFSM.Mode = AUTO;
   ReadExecutionMode();
-#ifndef DEBUG
+  
+#ifdef MODO_OUTPUT_ENABLED
   digitalWrite(MODO_LED_PIN, HIGH);
 #endif
 }
@@ -36,7 +37,8 @@ void ReadExecutionMode()
     {
       Serial.println(F("Change Mode -> AUTO"));
       StopManualAlarm();
-#ifndef DEBUG
+      
+#ifdef MODO_OUTPUT_ENABLED
       digitalWrite(MODO_LED_PIN, HIGH);
 #else
       UpdateDisplayToAutoMode();
@@ -47,7 +49,7 @@ void ReadExecutionMode()
       Serial.println(F("Change Mode -> MANUAL"));
       StartManualAlarm();
 
-#ifndef DEBUG
+#ifdef MODO_OUTPUT_ENABLED
       digitalWrite(MODO_LED_PIN, LOW);
 #else
       UpdateDisplayToManualMode();
@@ -55,7 +57,6 @@ void ReadExecutionMode()
     }
   }
 }
-
 
 
 bool IsAutomaticMode()

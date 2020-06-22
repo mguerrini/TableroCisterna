@@ -53,8 +53,6 @@ void ReadResetButton()
   }
 }
 
-
-
 boolean IsResetButtonPressed()
 {
   static unsigned long startTime = 0;
@@ -64,6 +62,7 @@ boolean IsResetButtonPressed()
   return IsButtonPressed(RESET_BTN_PIN, state, isPressed, startTime);
 }
 
+#ifdef GET_STATUS_BUTTON_ENABLED
 boolean IsGetStatusButtonPressed()
 {
   static unsigned long startTime = 0;
@@ -72,6 +71,7 @@ boolean IsGetStatusButtonPressed()
 
   return IsButtonPressed(GET_STATUS_BTN_PIN, state, isPressed, startTime);
 }
+#endif
 
 boolean IsContinueButtonPressed()
 {

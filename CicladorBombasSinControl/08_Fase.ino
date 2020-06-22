@@ -38,7 +38,7 @@ boolean IsFaseOk()
   static boolean state;
   static boolean isPressed;
 
-  IsButtonPressed(FASE_PIN, state, isPressed, startTime);
+  IsButtonPressed(FASE_ERROR_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
