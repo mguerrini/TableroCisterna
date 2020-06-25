@@ -139,6 +139,18 @@ void ShowNextInfoView()
       break;
 
     case 1:
+      lcd.print(F("T. llenado:         "));
+      lcd.setCursor(11, 1);
+      lcd.print(bomba1.FillTimeAverage);
+
+      lcd.setCursor(0, 2);
+      lcd.print(F("                    "));
+
+      lcd.setCursor(0, 3);
+      lcd.print(F("                    "));
+    break;
+
+    case 2:
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(F("***** Bomba 2 ******"));
@@ -156,8 +168,20 @@ void ShowNextInfoView()
       lcd.setCursor(16, 3);
       lcd.print(statistics.Bomba2ErrorTermicoCount);
       return;
+      
+    case 3:
+      lcd.print(F("T. llenado:         "));
+      lcd.setCursor(11, 1);
+      lcd.print(bomba2.FillTimeAverage);
 
-    case 2:
+      lcd.setCursor(0, 2);
+      lcd.print(F("                    "));
+
+      lcd.setCursor(0, 3);
+      lcd.print(F("                    "));
+    break;
+    
+    case 4:
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(F("**** Generales *****"));
@@ -172,7 +196,7 @@ void ShowNextInfoView()
       lcd.print(GetActiveBombaUses());
       return;
 
-    case 3:
+    case 6:
       lcd.setCursor(0, 1);
       lcd.print(F("Errores Fase:       "));
       lcd.setCursor(13, 1);

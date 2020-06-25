@@ -120,13 +120,6 @@ void BombaStateMachine(Bomba* bomba)
         break;
       }
 
-      if (bomba->RequestDisabled)
-      {
-        bomba->NextMachineState = FSM_BOMBA_DISABLING;
-        PrintBombaMessage(F("Request: Disabled"));
-        break;
-      }
-
       if (bomba->RequestOff)
       {
         bomba->NextMachineState = FSM_BOMBA_TURNING_OFF;
@@ -139,6 +132,13 @@ void BombaStateMachine(Bomba* bomba)
         //se apago...
         bomba->NextMachineState = FSM_BOMBA_TURNING_OFF;
         PrintBombaMessage(F("Contactor Abierto"));
+        break;
+      }
+
+      if (bomba->RequestDisabled)
+      {
+        bomba->NextMachineState = FSM_BOMBA_DISABLING;
+        PrintBombaMessage(F("Request: Disabled"));
         break;
       }
 
@@ -239,7 +239,7 @@ void BombaStateMachine(Bomba* bomba)
       {
         StopAlarmBomba(bomba);
         bomba->NextMachineState = FSM_BOMBA_TURNING_OFF;
-        PrintBombaMessage(F("Request Disabled"));
+        PrintBombaMessage(F("Request Off"));
         break;
       }
 

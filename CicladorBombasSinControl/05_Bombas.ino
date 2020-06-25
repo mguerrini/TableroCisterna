@@ -202,6 +202,11 @@ bool IsBombaEnabled(Bomba* bomba)
     return bomba2.IsEnabled;
 }
 
+bool IsBombaError(Bomba* bomba, byte error)
+{
+  return bomba->State == error;
+}
+
 bool IsBombaError(Bomba* bomba)
 {
   return bomba->State < 0;

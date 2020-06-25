@@ -10,7 +10,9 @@ void CicladorLoop()
   switch (automaticFSM.State)
   {
     case AUTO_IDLE:
-      //verifico los niveles
+      //sino esta ok la fase....no arranca el sistema. deberia volver a idle porque los motores se apagaron
+      if (!automaticFSM.IsFaseOk)
+        break;
 
       if (!IsBombaAvailable(bomba))
       {
@@ -62,31 +64,34 @@ void CicladorLoop()
 
       if (!IsBombaAvailable(bomba))
       {
-        //me fijo si fue timeout
-        if (bomba->State == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO )
-        {
-          if (!CanTurnOnBomba())
-          {
-            //vuelvo a idle
-            bomba->RequestOff = true;
-            automaticFSM.NextState = AUTO_IDLE;
-            PrintWorkingFSMMessage(F("Bomba Activa-Contactor no cierra-Niveles normales"));
-          }
-          else
-          {
-            //la bomba esta en error y hay que cambiar
-            //Cambio de bomba.
-            automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
-            PrintWorkingFSMMessage(F("Bomba Activa-Contactor no cierra"));
-          }
-        }
-        else
-        { //la bomba esta en error y hay que cambiar
-          //Cambio de bomba.
-          automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
-          PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
-        }
-
+        automaticFSM.NextState = AUTO_IDLE;
+        PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
+        /*
+                //me fijo si fue timeout
+                if (IsBombaError(bomba, BOMBA_STATE_ERROR_CONTACTOR_ABIERTO ))
+                {
+                  if (!CanTurnOnBomba())
+                  {
+                    //vuelvo a idle
+                    bomba->RequestOff = true;
+                    automaticFSM.NextState = AUTO_IDLE;
+                    PrintWorkingFSMMessage(F("Bomba Activa-Contactor no cierra-Niveles normales"));
+                  }
+                  else
+                  {
+                    //la bomba esta en error y hay que cambiar
+                    //Cambio de bomba.
+                    automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
+                    PrintWorkingFSMMessage(F("Bomba Activa-Contactor no cierra"));
+                  }
+                }
+                else
+                { //la bomba esta en error y hay que cambiar
+                  //Cambio de bomba.
+                  automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
+                  PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
+                }
+        */
         break;
       }
 
@@ -99,12 +104,8 @@ void CicladorLoop()
       }
 
       //intento encenderla...hasta que tire error por timeout o termico o arranqe
-      if (IsBombaOff(bomba))
-      {
-        bomba->RequestOn = true;
-        PrintWorkingFSMMessage(F("Bomba Off - Request On"));
-        break;
-      }
+      bomba->RequestOn = true;
+      PrintWorkingFSMMessage(F("Bomba Off - Request On"));
 
       break;
 
@@ -243,13 +244,17 @@ void CicladorLoop()
       if (bomba != NULL)
       {
         //Pongo activa la bomba seleccionada
-        StopAlarmNotAvailablesBombas();
         bomba = SwapAndActiveBomba();
+        if (bomba == NULL)
+          break;
+
         automaticFSM.NextState = AUTO_IDLE;
         if (bomba->Number == BOMBA1)
           PrintWorkingFSMMessage(F("Bomba 1 disponible-Stop Alarma"));
         else
           PrintWorkingFSMMessage(F("Bomba 2 disponible-Stop Alarma"));
+
+        StopAlarmNotAvailablesBombas();
 
         break;
       }
@@ -279,47 +284,46 @@ void CicladorLoop()
 
 
     case AUTO_ERROR_BOMBA_WORKING:
-      if (!CanTurnOffBomba())
+      //Si se apaga es por los niveles...los sensores quizas fallan
+      if (IsBombaOff(bomba))
       {
-        //no deberia apagarse....quizas se paso a manual justo cuando midio el tanque lleno, vuelve a working
-        automaticFSM.NextState = AUTO_WORKING;
-        PrintWorkingFSMMessage(F("Tanque - Bomba On"));
+        StopAlarmBomba(bomba);
+        automaticFSM.NextState = AUTO_STOPPING;
+        PrintWorkingFSMMessage(F("Bomba Off"));
         break;
       }
 
-      if (IsBombaOff(bomba))
-      {
-        automaticFSM.NextState = AUTO_STOPPING;
-        PrintWorkingFSMMessage(F("Tanque - Bomba On"));
-      }
-
-      //Si se apaga es por los niveles...los sensores quizas fallan
+      //paso a error
       if (!IsBombaAvailable(bomba))
       {
         StopAlarmBomba(bomba);
-        automaticFSM.NextState = AUTO_IDLE;
-        PrintWorkingFSMMessage(F("Bomba Frenada"));
+        automaticFSM.NextState = AUTO_STOPPING;
+        PrintWorkingFSMMessage(F("Bomba No Disponible"));
         break;
       }
 
+      if (!CanTurnOffBomba())
+      {
+        //no deberia apagarse....quizas se paso a manual justo cuando midio el tanque lleno, vuelve a working
+        StopAlarmBomba(bomba);
+        automaticFSM.NextState = AUTO_WORKING;
+        PrintWorkingFSMMessage(F("Tanque Empty - Cisterna Normal - Bomba On"));
+        break;
+      }
+
+      //a este punto no deberia llegar nunca....es porque esta prendida pero los niveles dicen que tiene que estar apagada.....
+      //falla en la eletronica encargada de traducir los 24 volts de los tanques a la entrada del arduino
       //trato de recuperar el error antes de disparar la alarma
       if (IsFirstTimeInAutoState())
       {
         StartAlarmBombaNotStop(bomba);
-        //TODO Resaltar el que la bomba no se detiene
+        //TODO Resaltar que la bomba no se detiene
         PrintWorkingFSMMessage(F("Start Alarm - Error Bomba ON"));
         break;
       }
 
       break;
 
-
-
-
-    case AUTO_CHANGE_BOMBA_FROM_TIMEOUT:
-      //los sensores de los niveles indican que se debe encender la bomba y nunca se cerraron los contactores
-      automaticFSM.NextState = AUTO_CHANGE_BOMBA;
-      break;
   }
 
   PrintExitStateWorkingFSM();
@@ -414,9 +418,6 @@ void PrintStateWorkingFSM(byte current)
       break;
     case AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE:
       Serial.print(F("AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE"));
-      break;
-    case AUTO_CHANGE_BOMBA_FROM_TIMEOUT:
-      Serial.print(F("AUTO_CHANGE_BOMBA_FROM_TIMEOUT"));
       break;
     case AUTO_CHANGE_BOMBA:
       Serial.print(F("AUTO_CHANGE_BOMBA"));
