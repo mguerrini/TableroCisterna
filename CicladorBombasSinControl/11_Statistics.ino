@@ -44,7 +44,8 @@ void Statistics_BombaOn(Bomba* bomba)
   statistics.Changed = true;
 }
 
-unsigned long Statistics_BombaOff(Bomba* bomba)
+
+void Statistics_BombaOff(Bomba* bomba, boolean registerFillTime)
 {
   if (bomba->Number == BOMBA1)
   {
@@ -52,7 +53,8 @@ unsigned long Statistics_BombaOff(Bomba* bomba)
     {
       unsigned long delta1 = millis() - statistics.Bomba2OnTime;
       unsigned int minutes1 = delta1 / 60000;
-      Stadistics_AddFillTime(bomba, minutes1);
+      if (registerFillTime)
+        Stadistics_AddFillTime(bomba, minutes1);
 
       statistics.Bomba1TotalMinutes = statistics.Bomba1TotalMinutes + minutes1; //minutos
       statistics.Bomba1OnTime = 0;
@@ -65,10 +67,11 @@ unsigned long Statistics_BombaOff(Bomba* bomba)
     {
       unsigned long delta2 = millis() - statistics.Bomba2OnTime;
       unsigned int minutes2 = delta2 / 60000;
-      Stadistics_AddFillTime(bomba, minutes2);
+      if (registerFillTime)
+        Stadistics_AddFillTime(bomba, minutes2);
 
       statistics.Bomba2TotalMinutes = statistics.Bomba2TotalMinutes + minutes2; //minutos
-      statistics.Bomba1OnTime = 0;
+      statistics.Bomba2OnTime = 0;
       statistics.Changed = true;
     }
   }
@@ -98,10 +101,12 @@ void Statistics_BombaErrorTermico(Bomba* bomba)
 {
   if (bomba->Number == BOMBA1)
   {
+    statistics.Bomba1OnTime = 0;
     statistics.Bomba1ErrorTermicoCount = statistics.Bomba1ErrorTermicoCount + 1;
   }
   else
   {
+    statistics.Bomba2OnTime = 0;
     statistics.Bomba2ErrorTermicoCount = statistics.Bomba2ErrorTermicoCount + 1;
   }
 

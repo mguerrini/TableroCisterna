@@ -47,7 +47,11 @@
 #endif
 
 // --- SENSOR FASE ---
-#define FASE_ERROR_PIN A1
+#define FASE1_PIN A3
+#define FASE2_PIN A6
+#define FASE3_PIN A7
+#define FASE_OUTPUT_PIN A1
+
 
 //--- MODO ---
 #ifndef DEBUG
@@ -107,6 +111,10 @@
 // --- Statistics ---
 const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si cambia
 
+// --- FASE ---
+#define FASE_READ_TIME 100 //100 milisegundos donde se promedia el valor leiado
+#define FASE_WAIT_BETWEEN_READS 10 //10 milisegundos de espera entre las mediciones
+
 
 // ***** MAQUINAS DE ESTADO *****
 
@@ -160,6 +168,7 @@ typedef struct  {
   bool RequestDisabled;
   bool IsContactorClosed;
   bool IsTermicoOk;
+  bool IsContactorOk;
   byte FromMachineState;
   byte MachineState;
   byte NextMachineState;
@@ -172,16 +181,6 @@ typedef struct  {
   unsigned long Timer;
 } Bomba;
 
-typedef struct {
-  byte FromState;
-  byte State;
-  byte NextState;
-
-  byte Mode;
-
-  boolean IsFaseOk;
-  unsigned long StoppingTimer;
-} AutoFSM;
 
 //--- SENSORES ---
 typedef struct
@@ -208,6 +207,8 @@ typedef struct  {
 
 } Alarm;
 
+
+//--- ESTADISTICAS ---
 typedef struct {
   unsigned long Bomba1Uses;
   unsigned long Bomba2Uses;
@@ -228,13 +229,50 @@ typedef struct {
   boolean Changed;
 } Statistics;
 
+//--- FASES ---
+
+typedef struct {
+  int Fase1Voltage;
+  int Fase2Voltage;
+  int Fase3Voltage;
+
+  boolean IsFase1Ok;
+  boolean IsFase2Ok;
+  boolean IsFase3Ok;
+
+  byte Fase1ReadCount;
+  byte Fase2ReadCount;
+  byte Fase3ReadCount;
+
+  unsigned long Fase1ReadTotal;
+  unsigned long Fase2ReadTotal;
+  unsigned long Fase3ReadTotal;
+
+  unsigned long Fase1LastRead;
+  unsigned long Fase2LastRead;
+  unsigned long Fase3LastRead;
+} Fase;
+
+
+typedef struct {
+  byte FromState;
+  byte State;
+  byte NextState;
+
+  byte Mode;
+
+  boolean IsFaseOk;
+  unsigned long StoppingTimer;
+} AutoFSM;
+
 // ----- VARIABLES -----
 Sensor sensores = {false, false, false};
 Bomba bomba1 = {BOMBA1};
 Bomba bomba2 = {BOMBA2};
-Alarm alarm = {};
+Alarm alarm = { };
 Statistics statistics = { };
-AutoFSM automaticFSM = {};
+AutoFSM automaticFSM = { };
+Fase fase = { };
 
 
 //**************************************************//
@@ -292,6 +330,7 @@ void setup() {
 void loop() {
   ReadCommands();
 
+  //Veo el reset
   ReadResetButton();
 
   ReadSwapButton();
@@ -366,7 +405,12 @@ void SetupPins()
 #endif
 
   // --- SENSOR FASE ---
-  pinMode(FASE_ERROR_PIN, INPUT_PULLUP);
+  pinMode(FASE1_PIN, INPUT);
+  pinMode(FASE2_PIN, INPUT);
+  pinMode(FASE3_PIN, INPUT);
+  pinMode(FASE_OUTPUT_PIN, OUTPUT);
+
+
 
   // --- SENSORES BOMBAS ---
   pinMode(BOMBA1_ENABLE_PIN, INPUT_PULLUP);

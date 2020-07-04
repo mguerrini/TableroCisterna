@@ -1,4 +1,6 @@
 
+
+
 // --- MODO ---
 void SetupFase()
 {
@@ -31,7 +33,20 @@ void ReadFase()
   //se podria hacer que titile el display
 }
 
+void ReadFase1()
+{
+  
+}
 
+void ReadFase2()
+{
+  
+}
+
+void ReadFase3()
+{
+  
+}
 boolean IsFaseOk()
 {
   static unsigned long startTime = 0;

@@ -14,7 +14,8 @@ void BombaStateMachine(Bomba* bomba)
       {
         bomba->State = BOMBA_STATE_OFF;
         UpdateBombaDisplay(bomba);
-        Statistics_BombaOff(bomba);
+        //registro si es modo automatico....sino puede funcionar sin llenado completo
+        Statistics_BombaOff(bomba, IsAutomaticMode());
         PrintBombaMessage(F("Bomba OFF"));
         break;
       }
@@ -108,6 +109,7 @@ void BombaStateMachine(Bomba* bomba)
         bomba->ContactorErrorCounter = 0; //reseteo los errores del contactor ya que se encendio.
         UpdateBombaDisplay(bomba);
 
+        //inicio la estadistica
         Statistics_BombaOn(bomba);
         PrintBombaMessage(F("Bomba ON"));
         break;
@@ -187,7 +189,6 @@ void BombaStateMachine(Bomba* bomba)
 
       break;
 
-
     case FSM_BOMBA_DISABLING:
       bomba->NextMachineState = FSM_BOMBA_DISABLED;
       PrintBombaMessage(F("Disabling-Stop Alarm"));
@@ -196,6 +197,9 @@ void BombaStateMachine(Bomba* bomba)
     case FSM_BOMBA_DISABLED:
       if (IsFirstTimeInState(bomba))
       {
+        //cancelo la estadistica de llenado
+        Statistics_BombaOff(bomba, false);
+
         StopAlarmBomba(bomba);
         bomba->IsEnabled = false;
         UpdateBombaDisplay(bomba);
@@ -278,6 +282,8 @@ void BombaStateMachine(Bomba* bomba)
       break;
 
     case FSM_BOMBA_ERROR_TERMICO:
+      Statistics_BombaOff(bomba, false);
+
       //por si las dos estan en este error y una se recupera, la otra tiene que seguir gritando
       //verifico si el termico se normalizo.
       if (bomba->IsTermicoOk)
