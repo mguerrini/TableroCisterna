@@ -2,21 +2,12 @@
 #define TEST
 
 //DISPLAYS
-//#define DISPLAY_OLED_128x64
 #define DISPLAY_20x4_I2C
-
-//ALARMAS
-//#define ALARM_BUZZER
-#define ALARM_LED
-//#define STATISTICS_SAVE_ENABLED
-
-
-// ************ PINES **************
 
 // --- DEBUG ---
 #define DEBUG
 #ifdef DEBUG
-#define DEBUG_CONTINUE_PIN A3
+  #define DEBUG_CONTINUE_PIN A3
 #endif
 
 //#define GET_STATUS_BUTTON_ENABLED
@@ -24,13 +15,22 @@
 #define GET_STATUS_BTN_PIN 2 //no se usa si no esta definido
 #endif
 
-// --- BUTTON ---
+
+
+// ****************************************************************** //
+//                        CONFIGURACIONES
+// ****************************************************************** //
+
+// ====================== BOTONES VARIOS ====================
 #define BOMBA_SWAP_BTN_PIN 12  //Cambiar bomba seleccionada
-#define CHANGE_MODE_BTN_PIN 13 //selector Manual / Automatico
 #define RESET_BTN_PIN 11
 #define VIEW_INFO_PIN A0 //Muestra información estadisticas y valores varios
 
-//--- INVERSOR ---
+#define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
+#define IS_CHANGE_MODE_PULSADOR true //tipo de boton, pulsador o llave
+
+
+// ====================== INVERSOR ======================
 //salida al rele que activa el Rele de los contactores
 #define BOMBA_SWAP_RELE_PIN A2
 //valor para Bomba1 Activa
@@ -38,7 +38,10 @@
 //valor para Bomba2 Activa
 #define BOMBA2_ACTIVE  LOW
 
-//--- ALARMA ---
+
+// ====================== ALARMA ======================
+//#define ALARM_BUZZER
+#define ALARM_LED
 #define ALARM_PIN 10
 
 //#define ALARM_AUX_ENBALED
@@ -46,20 +49,36 @@
 #define ALARM_PIN_AUX 0
 #endif
 
-// --- SENSOR FASE ---
-#define FASE1_PIN A3
-#define FASE2_PIN A6
-#define FASE3_PIN A7
+
+// ====================== FASES ======================
+#define FASE1_INPUT_PIN A3
+#define FASE2_INPUT_PIN A6
+#define FASE3_INPUT_PIN A7
 #define FASE_OUTPUT_PIN A1
 
+//valores de referencia para el valor de 220V
+#define FASE1_220_VALUE 1000;
+#define FASE2_220_VALUE 1000;
+#define FASE3_220_VALUE 1000;
 
-//--- MODO ---
+#define FASE_READ_COUNT_MAX 50 //100 milisegundos donde se promedia el valor leiado
+#define FASE_WAIT_BETWEEN_READS 10 //10 milisegundos de espera entre las mediciones
+#define FASE_MIN_VOLTAGE 190 //Valor minimo antes de que se considere falla
+
+// ====================== MODO ======================
+#define CHANGE_MODE_BTN_PIN 13 //selector Manual / Automatico
+
+#define MANUAL 0
+#define AUTO 1
+
 #ifndef DEBUG
 #define MODO_OUTPUT_ENABLED
 #define MODO_LED_PIN A3
 #endif
 
-// --- SENSORES BOMBAS ---
+
+// ====================== BOMBAS ======================
+// --- PINES ---
 #define BOMBA1_ENABLE_PIN  2
 #define BOMBA2_ENABLE_PIN  3
 
@@ -69,10 +88,35 @@
 #define BOMBA1_TERMICO_RETORNO_PIN  6
 #define BOMBA2_TERMICO_RETORNO_PIN  7
 
-// --- SENSOR DE NIVELES ---
-#define CISTERNA_EMPTY_PIN  8
-#define TANQUE_EMPTY_FULL_PIN  9
+// --- CONSTANTES ---
+#define NONE 0
+#define BOMBA1 1
+#define BOMBA2 2
 
+#define BOMBA_USES_MAX 1
+#define BOMBA_TURNING_ON_TIME 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
+#define BOMBA_TURNING_OFF_TIME 5000 //tiempo que espera hasta que el contactor avise que se abrio.
+#define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 100 //Maxima cantidad de intentos
+#define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
+
+
+// ====================== CISTERNA/TANQUE ======================
+// --- CISTERNA ---
+#define CISTERNA_EMPTY_PIN  8
+#define CISTERNA_EMPTY_MAX_TIME 10000 //tiempo (milisegundos) que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
+
+// --- TANQUE ---
+#define TANQUE_EMPTY_FULL_PIN  9
+#define TANQUE_TIME_TO_FULL 10000 //tiempo inicial para el llenado del tanque. Luego calcula el tiempo promedio por tanque y le suma u porcentage
+
+
+// ====================== ESTADISTICAS ======================
+//#define STATISTICS_SAVE_ENABLED
+const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si cambia
+
+
+
+// ====================== VARIOS ======================
 // --- TESTIGO BUTONES ---
 //#define TESTIGO_LED
 #ifdef TESTIGO_LED
@@ -80,45 +124,10 @@
 #endif
 
 
-// ************ CONSTANTES **************
-
-#define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
-
-//--- MODO ---
-#define MANUAL 0
-#define AUTO 1
-
-// --- BOMBAS ---
-#define BOMBA_USES_MAX 1
-#define BOMBA_TURNING_ON_TIME 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
-#define BOMBA_TURNING_OFF_TIME 5000 //tiempo que espera hasta que el contactor avise que se abrio.
-#define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 100 //Maxima cantidad de intentos
-#define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
-
-// --- CISTERNA ---
-#define CISTERNA_EMPTY_MAX_TIME 10000 //tiempo (milisegundos) que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
-
-// --- TANQUE ---
-#define TANQUE_TIME_TO_FULL 10000 //tiempo inicial para el llenado del tanque. Luego calcula el tiempo promedio por tanque y le suma u porcentage
-
-#define NONE 0
-#define BOMBA1 1
-#define BOMBA2 2
-
-// --- TIPO DE BOTONES ---
-#define IS_CHANGE_MODE_PULSADOR true
-
-// --- Statistics ---
-const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si cambia
-
-// --- FASE ---
-#define FASE_READ_TIME 100 //100 milisegundos donde se promedia el valor leiado
-#define FASE_WAIT_BETWEEN_READS 10 //10 milisegundos de espera entre las mediciones
-
-
-// ***** MAQUINAS DE ESTADO *****
-
-//--- BOMBA ---
+// ****************************************************************** //
+//                            ESTADOS
+// ****************************************************************** //
+// ====================== BOMBA ESTADOS ======================
 #define BOMBA_STATE_ON 1
 #define BOMBA_STATE_OFF 2
 #define BOMBA_STATE_ERROR_CONTACTOR_ABIERTO -1
@@ -126,7 +135,7 @@ const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si c
 #define BOMBA_STATE_ERROR_TERMICO -3
 
 
-//--- MAQUINAS DE ESTADO ---
+// ====================== FSM BOMBA ESTADOS ======================
 #define FSM_BOMBA_OFF 1
 #define FSM_BOMBA_TURNING_ON 2
 #define FSM_BOMBA_ON 3
@@ -139,7 +148,7 @@ const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si c
 #define FSM_BOMBA_ENABLING 10
 #define FSM_BOMBA_NULL 0
 
-//--- MODO AUTOMATICO ESTADOS ---
+// ====================== FSM AUTO ESTADOS ======================
 #define AUTO_IDLE 1
 #define AUTO_SELECTING_BOMBA 2
 #define AUTO_NOT_AVAILABLES_BOMBAS 3
@@ -152,6 +161,11 @@ const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si c
 #define AUTO_CHANGE_BOMBA 11
 #define AUTO_ERROR_BOMBA_WORKING 12
 #define AUTO_NULL 0
+
+
+// ****************************************************************** //
+//                        ESTRUCTURAS DE DATOS
+// ****************************************************************** //
 
 typedef struct  {
   byte Number;
@@ -192,6 +206,7 @@ typedef struct
   unsigned long CisternaEmptyMillis;
 } Sensor;
 
+
 //--- ALARMA ---
 typedef struct  {
   boolean IsBomba1AlarmON = false;
@@ -229,31 +244,18 @@ typedef struct {
   boolean Changed;
 } Statistics;
 
+
 //--- FASES ---
-
 typedef struct {
-  int Fase1Voltage;
-  int Fase2Voltage;
-  int Fase3Voltage;
+  int Voltage;
+  boolean IsOk;
 
-  boolean IsFase1Ok;
-  boolean IsFase2Ok;
-  boolean IsFase3Ok;
-
-  byte Fase1ReadCount;
-  byte Fase2ReadCount;
-  byte Fase3ReadCount;
-
-  unsigned long Fase1ReadTotal;
-  unsigned long Fase2ReadTotal;
-  unsigned long Fase3ReadTotal;
-
-  unsigned long Fase1LastRead;
-  unsigned long Fase2LastRead;
-  unsigned long Fase3LastRead;
+  unsigned long ReadTotal;
+  byte ReadCount;
+  unsigned long LastRead;
 } Fase;
 
-
+//--- FSM AUTO ---
 typedef struct {
   byte FromState;
   byte State;
@@ -265,19 +267,26 @@ typedef struct {
   unsigned long StoppingTimer;
 } AutoFSM;
 
-// ----- VARIABLES -----
+
+
+// ****************************************************************** //
+//                       VARIABLES DE SISTEMA
+// ****************************************************************** //
+
 Sensor sensores = {false, false, false};
 Bomba bomba1 = {BOMBA1};
 Bomba bomba2 = {BOMBA2};
 Alarm alarm = { };
 Statistics statistics = { };
 AutoFSM automaticFSM = { };
-Fase fase = { };
+Fase fase1 = { };
+Fase fase2 = { };
+Fase fase3 = { };
 
 
-//**************************************************//
-//                     SETUP
-//**************************************************//
+// ****************************************************************** //
+//                               SETUP
+// ****************************************************************** //
 void setup() {
   //start serial connection
   Serial.begin(115200);
@@ -405,12 +414,10 @@ void SetupPins()
 #endif
 
   // --- SENSOR FASE ---
-  pinMode(FASE1_PIN, INPUT);
-  pinMode(FASE2_PIN, INPUT);
-  pinMode(FASE3_PIN, INPUT);
+  pinMode(FASE1_INPUT_PIN, INPUT);
+  pinMode(FASE2_INPUT_PIN, INPUT);
+  pinMode(FASE3_INPUT_PIN, INPUT);
   pinMode(FASE_OUTPUT_PIN, OUTPUT);
-
-
 
   // --- SENSORES BOMBAS ---
   pinMode(BOMBA1_ENABLE_PIN, INPUT_PULLUP);

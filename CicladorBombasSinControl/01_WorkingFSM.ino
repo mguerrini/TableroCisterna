@@ -342,6 +342,63 @@ bool IsFirstTimeInAutoState()
   return automaticFSM.FromState != automaticFSM.State;
 }
 
+
+bool CanTurnOnBomba()
+{
+  if (IsAutomaticMode())
+    return sensores.IsTanqueSensorMinVal && !sensores.IsCisternaSensorMinVal;
+  else
+    return !sensores.IsCisternaSensorMinVal;
+}
+
+bool CanTurnOffBomba()
+{
+  if (IsAutomaticMode())
+    return sensores.IsTanqueSensorMaxVal || sensores.IsCisternaSensorMinVal;
+  else
+    return sensores.IsCisternaSensorMinVal;
+}
+
+
+Bomba* GetAvailableBomba()
+{
+  if (!IsBombaAvailable(&bomba1) && !IsBombaAvailable(&bomba2))
+    return NULL;
+
+  if (IsBombaAvailable(&bomba1) && IsBombaAvailable(&bomba2))
+  {
+    if (bomba1.IsActive)
+      return &bomba1;
+    else
+      return &bomba2;
+  }
+
+  if (IsBombaAvailable(&bomba1))
+    return &bomba1;
+
+  if (IsBombaAvailable(&bomba2))
+    return &bomba2;
+
+  return NULL;
+}
+
+Bomba* GetActiveBomba()
+{
+  if (bomba1.IsActive)
+    return &bomba1;
+
+  if (bomba2.IsActive)
+    return &bomba2;
+
+  return NULL;
+}
+
+
+
+
+
+
+
 void PrintEnterStateWorkingFSM()
 {
 #ifdef TEST
@@ -427,55 +484,4 @@ void PrintStateWorkingFSM(byte current)
       break;
 
   }
-}
-
-
-bool CanTurnOnBomba()
-{
-  if (IsAutomaticMode())
-    return sensores.IsTanqueSensorMinVal && !sensores.IsCisternaSensorMinVal;
-  else
-    return !sensores.IsCisternaSensorMinVal;
-}
-
-bool CanTurnOffBomba()
-{
-  if (IsAutomaticMode())
-    return sensores.IsTanqueSensorMaxVal || sensores.IsCisternaSensorMinVal;
-  else
-    return sensores.IsCisternaSensorMinVal;
-}
-
-
-Bomba* GetAvailableBomba()
-{
-  if (!IsBombaAvailable(&bomba1) && !IsBombaAvailable(&bomba2))
-    return NULL;
-
-  if (IsBombaAvailable(&bomba1) && IsBombaAvailable(&bomba2))
-  {
-    if (bomba1.IsActive)
-      return &bomba1;
-    else
-      return &bomba2;
-  }
-
-  if (IsBombaAvailable(&bomba1))
-    return &bomba1;
-
-  if (IsBombaAvailable(&bomba2))
-    return &bomba2;
-
-  return NULL;
-}
-
-Bomba* GetActiveBomba()
-{
-  if (bomba1.IsActive)
-    return &bomba1;
-
-  if (bomba2.IsActive)
-    return &bomba2;
-
-  return NULL;
 }

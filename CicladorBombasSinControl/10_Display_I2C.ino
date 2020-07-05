@@ -44,7 +44,11 @@ void UpdateView()
     return;
 
   unsigned long curr = millis();
-  unsigned long delta = curr - view.InfoViewNumberActiveTime;
+  unsigned long delta = 0;
+  if (curr >= view.InfoViewNumberActiveTime)
+    delta = curr - view.InfoViewNumberActiveTime;
+  else
+    delta =  view.InfoViewNumberActiveTime - curr;
 
   if (delta > INFO_VIEW_VISIBLE_TIME)
   {
@@ -57,22 +61,21 @@ void ShowErrorFaseView()
   view.IsMainViewActive = false;
   view.IsErrorFaseViewActive = true;
   view.IsInfoViewActive = false;
-  /*
-    lcd.clear();
-    lcd.setCursor(5, 1);
-    lcd.print(F("ERROR"));
-    lcd.setCursor(3, 2);
-    lcd.print(F("FALLA DE FASE"));
-  */
+
   //TODO agrgarle blink a la palabra ERROR de la fase que falla y al titulo
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("*** FALLA DE FASE **"));
+  ShowDatosFase();
+}
+
+void ShowDatosFase()
+{
   lcd.print(F("Fase 1:             "));
   lcd.setCursor(8, 1);
-  lcd.print(fase.Fase1Voltage);
+  lcd.print(fase1.Voltage);
   lcd.print(F(" V"));
-  if (!fase.IsFase1Ok)
+  if (!fase1.IsOk)
   {
     lcd.setCursor(16, 1);
     lcd.print(F("ERROR"));
@@ -82,24 +85,26 @@ void ShowErrorFaseView()
   lcd.setCursor(0, 2);
   lcd.print(F("Fase 2:             "));
   lcd.setCursor(8, 2);
-  lcd.print(fase.Fase2Voltage);
+  lcd.print(fase2.Voltage);
   lcd.print(F(" V"));
-  if (!fase.IsFase2Ok)
+  if (!fase2.IsOk)
   {
     lcd.setCursor(16, 2);
     lcd.print(F("ERROR"));
   }
 
+
   lcd.setCursor(0, 3);
   lcd.print(F("Fase 3:             "));
   lcd.setCursor(8, 3);
-  lcd.print(fase.Fase2Voltage);
+  lcd.print(fase3.Voltage);
   lcd.print(F(" V"));
-  if (!fase.IsFase2Ok)
+  if (!fase3.IsOk)
   {
     lcd.setCursor(16, 3);
     lcd.print(F("ERROR"));
   }
+
 }
 
 void ShowMainView()
@@ -148,22 +153,7 @@ void ShowNextInfoView()
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(F(" Tension de Entrada "));
-      lcd.print(F("Fase 1:             "));
-      lcd.setCursor(8, 1);
-      lcd.print(fase.Fase1Voltage);
-      lcd.print(F(" V"));
-
-      lcd.setCursor(0, 2);
-      lcd.print(F("Fase 2:             "));
-      lcd.setCursor(8, 2);
-      lcd.print(fase.Fase2Voltage);
-      lcd.print(F(" V"));
-
-      lcd.setCursor(0, 3);
-      lcd.print(F("Fase 3:             "));
-      lcd.setCursor(8, 3);
-      lcd.print(fase.Fase3Voltage);
-      lcd.print(F(" V"));
+      ShowDatosFase();
       break;
 
     case 1:
@@ -183,7 +173,7 @@ void ShowNextInfoView()
     case 4:
       printBombaView2(&bomba2);
       break;
-      
+
     case 5:
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -279,7 +269,7 @@ void PrintBombaView2(Bomba* bomba)
   if (bomba->Number == BOMBA1)
     lcd.print(statistics.Bomba1TotalMinutes);
   else
-    lcd.print(statistics.Bomba2TotalMinutes);  
+    lcd.print(statistics.Bomba2TotalMinutes);
 }
 
 
