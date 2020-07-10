@@ -28,6 +28,9 @@ void SetupBombas()
   bomba2.IsTermicoOk = false;
   bomba2.IsContactorClosed = false;
 
+  //leo el tiempo promedio de llenado
+
+  
   //activo la bomba 1
   ActivateBomba(&bomba1);
 
@@ -217,6 +220,10 @@ bool IsBombaAvailable(Bomba* bomba)
   return IsBombaEnabled(bomba) && !IsBombaError(bomba);
 }
 
+byte GetBombaState(Bomba* bomba)
+{
+  return bomba->State;
+}
 
 void ActivateBomba(Bomba* bomba)
 {

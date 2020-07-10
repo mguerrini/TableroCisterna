@@ -59,7 +59,7 @@ void ProcessAlarm(int activeTime, int inactiveTime)
   long delta;
   if (alarm.IsActive)
   {
-    delta = t - alarm.ActiveTime;
+    delta = deltaMillis(t, alarm.ActiveTime);
     if (delta > activeTime)
     {
       alarm.IsActive = false;

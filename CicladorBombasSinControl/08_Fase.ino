@@ -9,6 +9,18 @@ void SetupFase()
   fase2.IsOk = true;
   fase3.IsOk = true;
 
+  #ifdef FASE_FROM_EEPROM_ENABLED
+
+  #else
+  fase1.InputVoltsReference = TENSION_ENTRADA;
+  fase2.InputVoltsReference = TENSION_ENTRADA;
+  fase3.InputVoltsReference = TENSION_ENTRADA;
+
+  fase1.ConversionFactor = FASE1_220_VALUE;
+  fase2.ConversionFactor = FASE2_220_VALUE;
+  fase3.ConversionFactor = FASE3_220_VALUE;
+  #endif
+
   fase1.ReadCount = 0;
   fase2.ReadCount = 0;
   fase3.ReadCount = 0;
@@ -22,12 +34,14 @@ void SetupFase()
   fase3.LastRead = 0;
 }
 
+
+
 void ReadFases()
 {
   unsigned long t = millis();
-  ReadFase1(t);
-  ReadFase2(t);
-  ReadFase3(t);
+  boolean b1 = ReadFase1(t);
+  boolean b2 = ReadFase2(t);
+  boolean b3 = ReadFase3(t);
 
   boolean isOkCurrVal = fase1.IsOk && fase2.IsOk && fase3.IsOk;
 
@@ -35,70 +49,96 @@ void ReadFases()
   {
     if (automaticFSM.IsFaseOk)
     {
-      //muestro la pantalla mormal
-      ShowMainView();
-      Statistics_FaseError_End();
+      //muestro la pantalla de error
+      ShowErrorFaseView();
+      OnFaseError();
+      Statistics_FaseError_Begin();
     }
     else
     {
-      //muestro la pantalla de error
-      ShowErrorFaseView();
-      Statistics_FaseError_Begin();
+      //muestro la pantalla mormal
+      ShowMainView();
+      OnFaseOk();
+      Statistics_FaseError_End();
     }
 
-    automaticFSM.IsFaseOk = currVal;
+    automaticFSM.IsFaseOk = isOkCurrVal;
   }
 }
 
 
 void OnFaseError()
 {
-  //desactivar el rele para que se corte la alimentacion   
+  //desactivar el rele para que se corte la alimentacion
+  digitalWrite(FASE_OUTPUT_PIN, FASE_OUTPUT_CLOSE_RELE);
 }
 
 void OnFaseOk()
 {
-  //normalizar el rele para que vuelva a funcionar la bomba 
+  //normalizar el rele para que vuelva a funcionar la bomba
+  digitalWrite(FASE_OUTPUT_PIN, FASE_OUTPUT_OPEN_RELE);
 }
 
 
-void ReadFase1(unsigned long t)
+boolean ReadFase1(unsigned long t)
 {
-  unsigned long = delta = deltaMillis(t, fase->LastRead);
+  unsigned long delta = deltaMillis(t, fase1.LastRead);
   if (delta < FASE_WAIT_BETWEEN_READS)
-    return;
+    return false;
 
+#ifdef FASE1_ENABLED
   int fase1Val = analogRead(FASE1_INPUT_PIN);
-  int volts = map(fase1Val, 0, FASE1_220_VALUE, 0, 220);
-
+  int volts = mapLocal(fase1Val, 0, fase1.ConversionFactor, 0, fase1.InputVoltsReference);
   //agrego el nuevo valor
   updateFaseValues(&fase1, t, volts);
+
+#else
+  fase1.Voltage = fase1.InputVoltsReference;
+  fase1.IsOk = true;
+#endif
+
+  return true;
 }
 
-void ReadFase2(unsigned long t)
+boolean ReadFase2(unsigned long t)
 {
-  unsigned long = delta = deltaMillis(t, fase->LastRead);
+  unsigned long delta = deltaMillis(t, fase2.LastRead);
   if (delta < FASE_WAIT_BETWEEN_READS)
-    return;
+    return false;
 
+#ifdef FASE2_ENABLED
   int fase2Val = analogRead(FASE2_INPUT_PIN);
-  int volts = map(fase2Val, 0, FASE2_220_VALUE, 0, 220);
-
+  int volts = mapLocal(fase2Val, 0, fase2.ConversionFactor, 0, fase2.InputVoltsReference);
   //agrego el nuevo valor
-  updateFaseValues(&fase2, bt, volts);
+  updateFaseValues(&fase2, t, volts);
+#else
+  fase2.Voltage = fase2.InputVoltsReference;
+  fase2.IsOk = true;
+#endif
+
+  return true;
 }
 
-void ReadFase3(unsigned long t)
+boolean ReadFase3(unsigned long t)
 {
-  unsigned long = delta = deltaMillis(t, fase->LastRead);
+  unsigned long delta = deltaMillis(t, fase3.LastRead);
   if (delta < FASE_WAIT_BETWEEN_READS)
-    return;
+    return false;
 
+#ifdef FASE3_ENABLED
   int fase3Val = analogRead(FASE3_INPUT_PIN);
-  int volts = map(fase3Val, 0, FASE3_220_VALUE, 0, 220);
+  int volts = mapLocal(fase3Val, 0, fase3.ConversionFactor, 0, fase3.InputVoltsReference);
+  //Serial.print("Fase 3: ");
+  //Serial.println(volts);
 
   //agrego el nuevo valor
   updateFaseValues(&fase3, t, volts);
+#else
+  fase3.Voltage = fase3.InputVoltsReference;
+  fase3.IsOk = true;
+#endif
+
+  return true;
 }
 
 
@@ -107,15 +147,25 @@ void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
   fase->ReadCount = fase->ReadCount + 1;
   fase->ReadTotal = fase->ReadTotal + volts;
   fase->LastRead = readTime;
-
+/*
+  Serial.print(F("Count: "));
+  Serial.print(fase->ReadCount);
+  Serial.print(F(" Sum Total: "));
+  Serial.println(fase->ReadTotal);
+*/
   if (fase->ReadCount >= FASE_READ_COUNT_MAX)
   {
     //calculo el procentaje
     int value = fase->ReadTotal / fase->ReadCount;
+
     fase->Voltage = value;
-
     fase->IsOk = fase->Voltage > FASE_MIN_VOLTAGE;
-
+/*
+    Serial.print(F("Voltage: "));
+    Serial.print(fase->Voltage);
+    Serial.print(F(" IsOk: "));
+    Serial.println(fase->IsOk);
+*/
     //reseteo
     fase->ReadCount = 0;
     fase->ReadTotal = 0;
@@ -123,22 +173,45 @@ void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
 }
 
 
-unsigned long deltaMillis(unsigned long currRead, unsigned long prevRead)
+
+// *************************************************** //
+//                  FASE CALIBRATION
+// *************************************************** //
+
+int calibrateFase(int pinNumber, int faseNumber, String voltsStr)
 {
-  if (currRead >= prevRead)
-    return currRead - prevRead;
+  voltsStr.trim();
+  long inputVolts = voltsStr.toInt();
+
+  if (inputVolts > 0)
+  {
+    Serial.print(F("Inicio calibracion Fase "));
+    Serial.println(faseNumber);
+    Serial.print(F("Tension de referencia: "));
+    Serial.print(inputVolts);
+
+    //tengo que leer el valor de la fase y sacar un promedio
+    float total = 0;
+
+    for (int i = 0; i < 10; i++)
+    {
+      int fase1Val = analogRead(pinNumber);
+
+      total = total + fase1Val;
+
+      delay(FASE_WAIT_BETWEEN_READS);
+    }
+
+    float conversionFactor = total / 10;
+    int cFactor = (int) conversionFactor;    
+
+    Serial.print(F("Fin calibracion Fase: "));
+    Serial.println(faseNumber);
+    Serial.print(F("Constante obtenida [0 - 1023]: "));
+    Serial.println(cFactor);
+
+    return cFactor;
+  }
   else
-    return currRead; //volvio a cero...uso este valor como referencia....pierdo prevRead hasta el maximo..pero pasa 1 vez cada 47 dias
-}
-
-
-boolean IsFaseOk()
-{
-  static unsigned long startTime = 0;
-  static boolean state;
-  static boolean isPressed;
-
-  IsButtonPressed(FASE_ERROR_PIN, state, isPressed, startTime);
-
-  return isPressed;
+    return -1;
 }

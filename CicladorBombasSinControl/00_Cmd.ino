@@ -1,4 +1,3 @@
-
 // --- MODO ---
 void SetupCommands()
 {
@@ -8,15 +7,39 @@ void ReadCommands()
 {
   if (Serial.available() > 0) {
     // read the incoming byte:
-    int incomingByte = Serial.read();
-    char c = char(incomingByte);
+    String cmd = Serial.readString();
 
-    if (c == 'S' || c == 's')
+    if (cmd.length() == 0)
+      return;
+
+    //"CAL_FASE_1 180" = CALIBRACION DE FASE 1, EL VALOR DE TENSION INGRESADO DE REFERENCIA ES 180 VOLTS.
+
+    if (cmd.startsWith("CAL_FASE_1"))
+    {
+      int factor1 = calibrateFase(FASE1_INPUT_PIN, 1, cmd.substring(10));
+    }
+    else if (cmd.startsWith("CAL_FASE_2"))
+    {
+      int factor2 = calibrateFase(FASE2_INPUT_PIN, 2, cmd.substring(10));
+    }
+    else if (cmd.startsWith("CAL_FASE_3"))
+    {
+      int factor3 = calibrateFase(FASE3_INPUT_PIN, 3, cmd.substring(10));
+    }
+    else if (cmd == "S" || cmd == "s")
     {
       DoPrintStatus();
     }
   }
 }
+
+
+
+
+// *************************************************** //
+//                    SWAP BUTTON
+// *************************************************** //
+
 
 void ReadSwapButton()
 {
@@ -30,8 +53,37 @@ void ReadSwapButton()
   }
 }
 
-void ReadResetButton()
+
+
+// *************************************************** //
+//                    RESET
+// *************************************************** //
+
+
+void ReadResetAndClearStatisticsButton()
 {
+  /*
+    boolean resetBtn = IsResetButtonPressed();
+    boolean clearBtn = IsCleanStatisticsButtonPressed();
+
+    if (resetBtn || clearBtn)
+    {
+    Serial.print(F("Reset: "));
+    if (resetBtn)
+      Serial.print(F("TRUE "));
+    else
+      Serial.print(F("FALSE"));
+
+    Serial.print(F(" - Clear: "));
+
+    if (clearBtn)
+      Serial.println(F("TRUE"));
+    else
+      Serial.println(F("FALSE"));
+    }
+
+    return;
+  */
   if (IsResetButtonPressed())
   {
     Serial.println(F("RESET"));
@@ -45,7 +97,7 @@ void ReadResetButton()
     bomba1.MachineState = FSM_BOMBA_OFF;
     bomba1.FromMachineState = FSM_BOMBA_OFF;
     bomba1.IsTermicoOk = true;
-    bomba2.IsContactorClosed = false;
+    bomba1.IsContactorClosed = false;
 
     bomba2.State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
     bomba2.Uses = 0;
@@ -62,8 +114,72 @@ void ReadResetButton()
 
     StopAllAlarms();
   }
+
+  if (IsCleanStatisticsButtonPressed())
+  {
+    Serial.println(F("Clean Statistics"));
+    CleanStatistics();
+  }
 }
 
+boolean IsResetButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state = false;
+  static boolean isPressed = false;
+
+  return IsButtonPressedWithTimeRange(RESET_BTN_PIN, state, isPressed, startTime, 0, CLEAN_STADISTICS_PRESS_TIME);
+}
+
+boolean IsCleanStatisticsButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state = false;
+  static boolean isPressed = false;
+
+  return IsButtonPressedWithTimeRange(RESET_BTN_PIN, state, isPressed, startTime, CLEAN_STADISTICS_PRESS_TIME, 0);
+}
+
+
+
+
+// *************************************************** //
+//                    DEBUG
+// *************************************************** //
+
+#ifdef DEBUG
+#ifdef CONTINUE_BUTTON_ENABLED
+boolean IsContinueButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state;
+  static boolean isPressed;
+
+  return IsButtonPressed(DEBUG_CONTINUE_PIN, state, isPressed, startTime);
+}
+else
+  boolean IsContinueButtonPressed()
+{
+  return IsAnalogButtonPressed(0);
+}
+#endif
+#endif
+
+
+#ifdef GET_STATUS_BUTTON_ENABLED
+boolean IsGetStatusButtonPressed()
+{
+  static unsigned long startTime = 0;
+  static boolean state = false;
+  static boolean isPressed = false;
+
+  return IsButtonPressed(GET_STATUS_BTN_PIN, state, isPressed, startTime);
+}
+#endif
+
+// *************************************************** //
+//                PRINT STATUS
+// *************************************************** //
 void ReadPrintStatus()
 {
 #ifdef GET_STATUS_BUTTON_ENABLED
@@ -73,40 +189,6 @@ void ReadPrintStatus()
   DoPrintStatus();
 #endif
 }
-
-
-boolean IsResetButtonPressed()
-{
-  static unsigned long startTime = 0;
-  static boolean state;
-  static boolean isPressed;
-
-  return IsButtonPressed(RESET_BTN_PIN, state, isPressed, startTime);
-}
-
-#ifdef GET_STATUS_BUTTON_ENABLED
-boolean IsGetStatusButtonPressed()
-{
-  static unsigned long startTime = 0;
-  static boolean state;
-  static boolean isPressed;
-
-  return IsButtonPressed(GET_STATUS_BTN_PIN, state, isPressed, startTime);
-}
-#endif
-
-boolean IsContinueButtonPressed()
-{
-  static unsigned long startTime = 0;
-  static boolean state;
-  static boolean isPressed;
-
-  return IsButtonPressed(DEBUG_CONTINUE_PIN, state, isPressed, startTime);
-}
-
-
-
-
 
 void DoPrintStatus()
 {
@@ -218,22 +300,22 @@ void PrintBomba(Bomba* bomba)
   Serial.print(F("Uses: "));
   Serial.println(bomba->Uses);
 
-//  Serial.print(F("Timer: "));
-//  Serial.println(bomba->Timer);
+  //  Serial.print(F("Timer: "));
+  //  Serial.println(bomba->Timer);
 
   Serial.print(F("Contactor Error Counter: "));
   Serial.println(bomba->ContactorErrorCounter);
 
   Serial.print(F("Tiempo de llenado: "));
-  Serial.println(bomba->FillTimeAverage);
+  Serial.println(bomba->FillTimeMinutesAverage);
 
   Serial.print(F("Tiempos de llenado: "));
-  for (int i=0; i<9; i++)
+  for (int i = 0; i < 9; i++)
   {
-    Serial.print(bomba->FillTimes[i]);
+    Serial.print(bomba->FillTimeMinutes[i]);
     Serial.print(F(", "));
   }
-  Serial.println(bomba->FillTimes[9]);
+  Serial.println(bomba->FillTimeMinutes[9]);
 
   if (bomba->IsContactorClosed)
     Serial.println(F("IsContactorClosed: true"));
@@ -291,3 +373,142 @@ void PrintStateBomba(Bomba* bomba, bool newLine)
   if (newLine)
     Serial.println();
 }
+
+
+long mapLocal(float value, float in_min, float in_max, float out_min, float out_max)
+{
+  float v = (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  float output = round(v);
+
+  /*
+    Serial.print("Map Value: ");
+    Serial.print(v);
+    Serial.print(" ");
+    Serial.print(output);
+  */
+  return output;
+}
+
+// *************************************************** //
+//                    READ EEPROM
+// *************************************************** //
+
+/*
+ * 
+long EEPROMReadlong(long address) {
+  long four = EEPROM.read(address);
+  long three = EEPROM.read(address + 1);
+  long two = EEPROM.read(address + 2);
+  long one = EEPROM.read(address + 3);
+
+  return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
+}
+
+void EEPROMWritelong(int address, long value) {
+  byte four = (value & 0xFF);
+  byte three = ((value >> 8) & 0xFF);
+  byte two = ((value >> 16) & 0xFF);
+  byte one = ((value >> 24) & 0xFF);
+
+  EEPROM.write(address, four);
+  EEPROM.write(address + 1, three);
+  EEPROM.write(address + 2, two);
+  EEPROM.write(address + 3, one);
+}
+
+*/
+
+// *************************************************** //
+//                    ANALOG BUTTONS
+// *************************************************** //
+/*
+  #define BTN_ANALOG_PRESSED_TIME 20
+  #define ANALOG_BUTTONS_COUNT 7
+  #define ANALOG_BUTTONS_PIN A3
+
+
+  int currentValue;
+
+  int buttonStep = 1023 / ANALOG_BUTTONS_COUNT;
+
+  unsigned long startTime = 0;
+
+  boolean AnalogButtons_State[ANALOG_BUTTONS_COUNT];
+  boolean AnalogButtons_IsPressed[ANALOG_BUTTONS_COUNT];
+  unsigned long AnalogButtons_StartTime[ANALOG_BUTTONS_COUNT];
+
+  void SetupAnalogButtons()
+  {
+  Serial.println("Analog buttons Setup");
+  for (int i = 0; i < ANALOG_BUTTONS_COUNT; i++)
+  {
+    AnalogButtons_State[i] = false;
+    AnalogButtons_IsPressed[i] = false;
+    AnalogButtons_StartTime[i] = 0;
+  }
+  }
+
+
+  void ReadAnalogButtons()
+  {
+  currentValue = analogRead(ANALOG_BUTTONS_PIN);
+  Serial.print(F("Analog Buttons Readed Value: "));
+  Serial.println(currentValue);
+  delay(500);
+
+  for (int i=0; i<ANALOG_BUTTONS_COUNT; i++)
+  {
+    boolean b = IsAnalogButtonPressed(i);
+  }
+  }
+
+  boolean IsAnalogButtonPressed(int number)
+  {
+  return IsAnalogButtonPressed(number, currentValue);
+  }
+
+  //Cada vez que se presiona el botón devuelve true y luego false. Mientras se mantenga presionado isPressed es true.
+  boolean IsAnalogButtonPressed(int buttonNumber, int currentValue)
+  {
+  boolean state = AnalogButtons_State[buttonNumber];
+  boolean isPressed = AnalogButtons_IsPressed[buttonNumber];
+  unsigned long startTime = AnalogButtons_StartTime[buttonNumber];
+
+  int middleValue = buttonStep * buttonNumber;
+  int minValue = middleValue + 10;
+  int maxValue = middleValue - 10;
+
+  //estado del boton presionado
+  boolean currState = minValue <= currentValue && currentValue <= maxValue;
+
+  //verifico si cambio el estado...y registro el inicio del cambios
+  if (currState != state)
+  {
+    state = !state;
+    startTime = millis();
+    isPressed = false;
+
+    AnalogButtons_State[buttonNumber] = state;
+    AnalogButtons_IsPressed[buttonNumber] = isPressed;
+    AnalogButtons_StartTime[buttonNumber] = startTime;
+  }
+
+  //state == HIGH -> Boton presionado
+  if (state == HIGH && !isPressed) {
+    unsigned long delta = deltaMillis(millis(), startTime);
+    boolean output = delta > BTN_ANALOG_PRESSED_TIME;
+
+    if (output)
+    {
+      isPressed = true;
+      AnalogButtons_IsPressed[buttonNumber] = isPressed;
+    }
+
+    return output;
+  }
+  else
+  {
+    return false;
+  }
+  }
+*/

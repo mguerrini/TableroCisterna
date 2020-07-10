@@ -38,9 +38,7 @@ void ReadExecutionMode()
       Serial.println(F("Change Mode -> AUTO"));
       StopManualAlarm();
       
-#ifdef MODO_OUTPUT_ENABLED
-      digitalWrite(MODO_LED_PIN, HIGH);
-#else
+#ifdef MODO_OUTPUT_VIEW_ENABLED
       UpdateDisplayToAutoMode();
 #endif      
     }
@@ -49,9 +47,7 @@ void ReadExecutionMode()
       Serial.println(F("Change Mode -> MANUAL"));
       StartManualAlarm();
 
-#ifdef MODO_OUTPUT_ENABLED
-      digitalWrite(MODO_LED_PIN, LOW);
-#else
+#ifdef MODO_OUTPUT_VIEW_ENABLED
       UpdateDisplayToManualMode();
 #endif      
     }

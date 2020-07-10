@@ -28,7 +28,7 @@ void ReadCisternaSensors()
 
   if (sensores.IsCisternaSensorMinVal)
   {
-    sensores.CisternaEmptyMillis = millis() - sensores.CisternaEmptyStartTime;
+    sensores.CisternaEmptyMillis = deltaMillis(millis(), sensores.CisternaEmptyStartTime);
     
     if (sensores.CisternaEmptyMillis > CISTERNA_EMPTY_MAX_TIME)
     {

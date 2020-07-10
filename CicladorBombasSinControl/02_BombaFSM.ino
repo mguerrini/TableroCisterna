@@ -84,7 +84,7 @@ void BombaStateMachine(Bomba* bomba)
       }
 
       //espero un tiempo prudencial hasta que arranque la bomba
-      wait = millis() - bomba->Timer;
+      wait = deltaMillis(millis(), bomba->Timer);
       //espero a que inicie la bomba activa que deberia estar en ON.
       //sino se inicia => el contactor fallo
       if (wait > BOMBA_TURNING_ON_TIME)
@@ -174,7 +174,7 @@ void BombaStateMachine(Bomba* bomba)
       }
 
       //espero un tiempo prudencial hasta que arranque la bomba
-      wait = millis() - bomba->Timer;
+      wait = deltaMillis(millis(), bomba->Timer);
       //espero a que inicie....la bomba activa deberia estar en ON.
       if (wait > BOMBA_TURNING_OFF_TIME)
       {
@@ -227,6 +227,7 @@ void BombaStateMachine(Bomba* bomba)
         break;
       }
 
+      //no verifico el estado del contactor....
       if (bomba->IsContactorClosed)
         bomba->NextMachineState = FSM_BOMBA_TURNING_ON;
       else
@@ -269,7 +270,7 @@ void BombaStateMachine(Bomba* bomba)
       //despues de un tiempo deberia salir del error y probar de nuevo
       if (bomba->ContactorErrorCounter < BOMBA_CONTACTOR_ERROR_INTENTOS_MAX)
       {
-        unsigned long delta = millis() - bomba->StartError;
+        unsigned long delta = deltaMillis(millis(), bomba->StartError);
         if (delta > BOMBA_CONTACTOR_ERROR_INTERVAL)
         {
           StopAlarmBomba(bomba);

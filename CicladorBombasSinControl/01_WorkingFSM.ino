@@ -10,7 +10,7 @@ void CicladorLoop()
   switch (automaticFSM.State)
   {
     case AUTO_IDLE:
-      //sino esta ok la fase....no arranca el sistema. deberia volver a idle porque los motores se apagaron
+      //sino esta ok la fase....no arranca el sistema. Deberia volver a idle porque los motores se apagaron
       if (!automaticFSM.IsFaseOk)
         break;
 
@@ -192,7 +192,7 @@ void CicladorLoop()
       if (IsBombaOn(bomba))
       {
         //espero un tiempo prudencial hasta que arranque la bomba
-        unsigned long wait = millis() - automaticFSM.StoppingTimer;
+        unsigned long wait = deltaMillis(millis(), automaticFSM.StoppingTimer);
         //espero a que inicie....la bomba activa deberia estar en ON.
         if (wait > (2 * BOMBA_TURNING_OFF_TIME))
         {
@@ -337,6 +337,11 @@ void CicladorLoop()
   BombaStateMachine(&bomba2);
 }
 
+
+// *************************************************** //
+//                FUNCIONES AUXLIARES
+// *************************************************** //
+
 bool IsFirstTimeInAutoState()
 {
   return automaticFSM.FromState != automaticFSM.State;
@@ -350,6 +355,7 @@ bool CanTurnOnBomba()
   else
     return !sensores.IsCisternaSensorMinVal;
 }
+
 
 bool CanTurnOffBomba()
 {
@@ -397,7 +403,9 @@ Bomba* GetActiveBomba()
 
 
 
-
+// *************************************************** //
+//                       PRINT
+// *************************************************** //
 
 void PrintEnterStateWorkingFSM()
 {

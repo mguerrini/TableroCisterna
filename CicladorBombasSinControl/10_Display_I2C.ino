@@ -11,6 +11,8 @@ typedef struct {
   boolean IsErrorFaseViewActive = false;
   boolean IsInfoViewActive = false;
 
+  unsigned long FaseViewLastRefreshTime = 0;
+
   byte InfoViewNumberActive = 0;
   unsigned long InfoViewNumberActiveTime = 0;
 } View;
@@ -30,6 +32,7 @@ void SetupDisplay()
   view.IsErrorFaseViewActive = false;
   view.IsInfoViewActive = false;
 
+  view.FaseViewLastRefreshTime = 0;
   view.InfoViewNumberActive = 0;
   view.InfoViewNumberActiveTime = 0;
 
@@ -40,27 +43,38 @@ void SetupDisplay()
 
 void UpdateView()
 {
-  if (!view.IsInfoViewActive)
+  if (view.IsMainViewActive)
     return;
 
-  unsigned long curr = millis();
-  unsigned long delta = 0;
-  if (curr >= view.InfoViewNumberActiveTime)
-    delta = curr - view.InfoViewNumberActiveTime;
-  else
-    delta =  view.InfoViewNumberActiveTime - curr;
-
-  if (delta > INFO_VIEW_VISIBLE_TIME)
+  if (view.IsInfoViewActive)
   {
-    ShowMainView();
+    unsigned long delta1 = deltaMillis(millis(), view.InfoViewNumberActiveTime);
+
+    //uso el mismo delta para refrescar la ventane de error
+    if (delta1 > INFO_VIEW_VISIBLE_TIME)
+      ShowMainView();
+  }
+
+  if (view.IsErrorFaseViewActive)
+  {
+    unsigned long delta2 = deltaMillis(millis(), view.FaseViewLastRefreshTime);
+    if (delta2 > FASE_REFRESH_TIME)
+    {
+      RefreshFaseView();
+      view.FaseViewLastRefreshTime = millis();
+    }
   }
 }
+
 
 void ShowErrorFaseView()
 {
   view.IsMainViewActive = false;
   view.IsErrorFaseViewActive = true;
   view.IsInfoViewActive = false;
+
+  view.FaseViewLastRefreshTime = millis();
+
 
   //TODO agrgarle blink a la palabra ERROR de la fase que falla y al titulo
   lcd.clear();
@@ -69,15 +83,32 @@ void ShowErrorFaseView()
   ShowDatosFase();
 }
 
+void RefreshFaseView()
+{
+  lcd.setCursor(8, 1);
+  lcd.print(fase1.Voltage);
+  lcd.print(F(" V"));
+
+  lcd.setCursor(8, 2);
+  lcd.print(fase2.Voltage);
+  lcd.print(F(" V"));
+
+  lcd.setCursor(8, 3);
+  lcd.print(fase3.Voltage);
+  lcd.print(F(" V"));
+}
+
+
 void ShowDatosFase()
 {
+  lcd.setCursor(0, 1);
   lcd.print(F("Fase 1:             "));
   lcd.setCursor(8, 1);
   lcd.print(fase1.Voltage);
   lcd.print(F(" V"));
   if (!fase1.IsOk)
   {
-    lcd.setCursor(16, 1);
+    lcd.setCursor(15, 1);
     lcd.print(F("ERROR"));
   }
 
@@ -89,7 +120,7 @@ void ShowDatosFase()
   lcd.print(F(" V"));
   if (!fase2.IsOk)
   {
-    lcd.setCursor(16, 2);
+    lcd.setCursor(15, 2);
     lcd.print(F("ERROR"));
   }
 
@@ -101,7 +132,7 @@ void ShowDatosFase()
   lcd.print(F(" V"));
   if (!fase3.IsOk)
   {
-    lcd.setCursor(16, 3);
+    lcd.setCursor(15, 3);
     lcd.print(F("ERROR"));
   }
 
@@ -120,6 +151,8 @@ void ShowMainView()
 
   UpdateCisternaDisplay();
   UpdateTanqueDisplay();
+
+  UpdateActiveBombaDisplay();
 }
 
 void ShowInfoView()
@@ -158,20 +191,20 @@ void ShowNextInfoView()
 
     case 1:
       //Estadisticas Bomba 1
-      printBombaView1(&bomba1);
+      PrintBombaView1(&bomba1);
       break;
 
     case 2:
-      printBombaView2(&bomba1);
+      PrintBombaView2(&bomba1);
       break;
 
     case 3:
       //Estadisticas Bomba 1
-      printBombaView1(&bomba2);
+      PrintBombaView1(&bomba2);
       break;
 
     case 4:
-      printBombaView2(&bomba2);
+      PrintBombaView2(&bomba2);
       break;
 
     case 5:
@@ -205,7 +238,7 @@ void ShowNextInfoView()
   ShowMainView();
 }
 
-void printBombaView1(Bomba* bomba)
+void PrintBombaView1(Bomba* bomba)
 {
   int number = bomba->Number;
   lcd.clear();
@@ -232,14 +265,14 @@ void printBombaView1(Bomba* bomba)
   lcd.setCursor(0, 2);
   lcd.print(F("T. llenado min.:     "));
   lcd.setCursor(11, 2);
-  lcd.print(bomba->FillTimeAverage);
+  lcd.print(bomba->FillTimeMinutesAverage);
 }
 
 void PrintBombaView2(Bomba* bomba)
 {
   lcd.setCursor(0, 1);
   lcd.print(F("Contactor: "));
-  if (bomba->IsContactorOk)
+  if (GetBombaState(bomba) == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
   {
     lcd.setCursor(11, 1);
     lcd.print(F("OK       "));

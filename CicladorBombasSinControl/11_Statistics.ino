@@ -13,7 +13,9 @@ void SaveStatistics()
   if (statistics.Changed)
   {
     unsigned long curr = millis();
-    if ((curr - statistics.LastTimeSaved) > STATISTICS_TIME_TO_SAVE)
+    unsigned long delta = deltaMillis(curr,  statistics.LastTimeSaved);
+    
+    if (delta > STATISTICS_TIME_TO_SAVE)
     {
       statistics.LastTimeSaved = curr;
       statistics.Changed = false;
@@ -51,7 +53,7 @@ void Statistics_BombaOff(Bomba* bomba, boolean registerFillTime)
   {
     if (statistics.Bomba1OnTime > 0)
     {
-      unsigned long delta1 = millis() - statistics.Bomba2OnTime;
+      unsigned long delta1 = deltaMillis(millis(), statistics.Bomba1OnTime);
       unsigned int minutes1 = delta1 / 60000;
       if (registerFillTime)
         Stadistics_AddFillTime(bomba, minutes1);
@@ -65,7 +67,7 @@ void Statistics_BombaOff(Bomba* bomba, boolean registerFillTime)
   {
     if (statistics.Bomba2OnTime > 0)
     {
-      unsigned long delta2 = millis() - statistics.Bomba2OnTime;
+      unsigned long delta2 = deltaMillis(millis(), statistics.Bomba2OnTime);
       unsigned int minutes2 = delta2 / 60000;
       if (registerFillTime)
         Stadistics_AddFillTime(bomba, minutes2);
@@ -84,17 +86,19 @@ void Stadistics_AddFillTime(Bomba* bomba, unsigned int fillTime)
 
   for (int i = 8; i >= 0; i--)
   {
-    bomba->FillTimes[i + 1] = bomba->FillTimes[i];
+    bomba->FillTimeMinutes[i + 1] = bomba->FillTimeMinutes[i];
 
-    if (bomba->FillTimes[i + 1] > 0)
+    if (bomba->FillTimeMinutes[i + 1] > 0)
     {
       count++;
-      total += bomba->FillTimes[i + 1];
+      total += bomba->FillTimeMinutes[i + 1];
     }
   }
 
-  bomba->FillTimes[0] = fillTime;
-  bomba->FillTimeAverage = total / count;
+  bomba->FillTimeMinutes[0] = fillTime;
+  bomba->FillTimeMinutesAverage = total / count;
+
+  
 }
 
 void Statistics_BombaErrorTermico(Bomba* bomba)
@@ -128,7 +132,7 @@ void Statistics_FaseError_End()
   if (statistics.FaseErrorBeginTime <= 0)
     return;
 
-  unsigned long delta = millis() - statistics.FaseErrorBeginTime;
+  unsigned long delta = deltaMillis(millis(), statistics.FaseErrorBeginTime);
   statistics.FaseErrorBeginTime = 0;
   statistics.ErrorFaseTotalMinutes = statistics.ErrorFaseTotalMinutes + (delta / 60000); //minutos
   statistics.Changed = true;
@@ -151,6 +155,9 @@ void CleanStatistics()
   statistics.Bomba1OnTime = 0;
   statistics.Bomba2OnTime = 0;
   statistics.FaseErrorBeginTime = 0;
+
+  //guardo las estadisticas reiniciadas
+  DoSaveStatistics();
 }
 
 void DoSaveStatistics()
@@ -165,26 +172,4 @@ void ReadStatistics()
 #ifdef STATISTICS_SAVE_ENABLED
 
 #endif
-}
-
-
-long EEPROMReadlong(long address) {
-  long four = EEPROM.read(address);
-  long three = EEPROM.read(address + 1);
-  long two = EEPROM.read(address + 2);
-  long one = EEPROM.read(address + 3);
-
-  return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
-}
-
-void EEPROMWritelong(int address, long value) {
-  byte four = (value & 0xFF);
-  byte three = ((value >> 8) & 0xFF);
-  byte two = ((value >> 16) & 0xFF);
-  byte one = ((value >> 24) & 0xFF);
-
-  EEPROM.write(address, four);
-  EEPROM.write(address + 1, three);
-  EEPROM.write(address + 2, two);
-  EEPROM.write(address + 3, one);
 }
