@@ -162,7 +162,6 @@ boolean IsCleanStatisticsButtonPressed()
 // *************************************************** //
 
 #ifdef DEBUG
-#ifdef CONTINUE_BUTTON_ENABLED
 boolean IsContinueButtonPressed()
 {
   static unsigned long startTime = 0;
@@ -171,12 +170,6 @@ boolean IsContinueButtonPressed()
 
   return IsButtonPressed(DEBUG_CONTINUE_PIN, state, isPressed, startTime);
 }
-else
-  boolean IsContinueButtonPressed()
-{
-  return IsAnalogButtonPressed(0);
-}
-#endif
 #endif
 
 

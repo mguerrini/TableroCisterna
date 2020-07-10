@@ -66,32 +66,6 @@ void CicladorLoop()
       {
         automaticFSM.NextState = AUTO_IDLE;
         PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
-        /*
-                //me fijo si fue timeout
-                if (IsBombaError(bomba, BOMBA_STATE_ERROR_CONTACTOR_ABIERTO ))
-                {
-                  if (!CanTurnOnBomba())
-                  {
-                    //vuelvo a idle
-                    bomba->RequestOff = true;
-                    automaticFSM.NextState = AUTO_IDLE;
-                    PrintWorkingFSMMessage(F("Bomba Activa-Contactor no cierra-Niveles normales"));
-                  }
-                  else
-                  {
-                    //la bomba esta en error y hay que cambiar
-                    //Cambio de bomba.
-                    automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
-                    PrintWorkingFSMMessage(F("Bomba Activa-Contactor no cierra"));
-                  }
-                }
-                else
-                { //la bomba esta en error y hay que cambiar
-                  //Cambio de bomba.
-                  automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
-                  PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
-                }
-        */
         break;
       }
 
@@ -155,6 +129,16 @@ void CicladorLoop()
           PrintWorkingFSMMessage(F("Cisterna: Vacia"));
         }
         break;
+      }
+
+      //verifico el tiempo de bombeo...si supera el maximo....cambio de bomba
+      unsigned long workingMax = GetBombaWorkingTimeMaximum(bomba);
+      unsigned long workingTime = GetBombaWorkingTime(bomba);
+
+      if (workingTime > workingMax)
+      {
+        //cambio de bomba.....no esta funcionando
+
       }
 
       break;
@@ -282,6 +266,23 @@ void CicladorLoop()
       PrintWorkingFSMMessage(F("Bomba Activa Normalizada"));
       break;
 
+    case AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT:
+      //no registro error....trato de switchear bomba
+      Serial.println("Bomba activa - Fill timeout");
+      /*
+      bomba->RequestTimeout = true;
+      if (IsBombaError(bomba))
+      {
+        //la bomba paso a error.....cambio de bomba
+        automaticFSM.NextState = AUTO_CHANGE_BOMBA;
+        PrintWorkingFSMMessage(F("Bomba Activa Fill Timeout"));
+        break;   
+      }
+      */
+      //deberia poner la bomba en estado de timeout de llenado
+      automaticFSM.NextState = AUTO_CHANGE_BOMBA;
+      PrintWorkingFSMMessage(F("Bomba Activa Fill Timeout"));
+      break;
 
     case AUTO_ERROR_BOMBA_WORKING:
       //Si se apaga es por los niveles...los sensores quizas fallan
@@ -490,6 +491,10 @@ void PrintStateWorkingFSM(byte current)
     case AUTO_ERROR_BOMBA_WORKING:
       Serial.print(F("AUTO_ERROR_BOMBA_WORKING"));
       break;
+    case AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT:
+      Serial.print(F("AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT"));
+      break;
+
 
   }
 }

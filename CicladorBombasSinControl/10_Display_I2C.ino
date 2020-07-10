@@ -338,15 +338,49 @@ void UpdateBombaDisplay(bool enabled, int state, int row)
   else
   {
     if (state == BOMBA_STATE_ON)
-      lcd.print(F("Encendida     "));
+      lcd.print(F("ON         0 m"));
     else if (state == BOMBA_STATE_OFF)
-      lcd.print(F("Apagada       "));
+      lcd.print(F("OFF           "));
     else if (state == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
       lcd.print(F("Err.Contactor "));
     else if (state == BOMBA_STATE_ERROR_CONTACTOR_CERRADO)
       lcd.print(F("Err.Contactor "));
     else if (state == BOMBA_STATE_ERROR_TERMICO)
       lcd.print(F("Err.Termico   "));
+  }
+}
+
+void UpdateBombaWorkingTime(Bomba* bomba)
+{
+  unsigned long min = GetBombaWorkingTime(bomba);
+
+  int row = 0;
+  if (bomba->Number == BOMBA2)
+    row = 1;
+
+  if (min < 10)
+  {
+    //1 caracter
+    lcd.setCursor(17, row);
+    lcd.print(min);
+  }
+  else if (min < 100)
+  {
+    //2 caracteres
+    lcd.setCursor(16, row);
+    lcd.print(min);
+  }
+  else if (min < 1000)
+  {
+    //3 caracteres
+    lcd.setCursor(15, row);
+    lcd.print(min);
+  }
+  else
+  {
+    //4 caracteres
+    lcd.setCursor(14, row);
+    lcd.print(min);
   }
 }
 

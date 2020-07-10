@@ -287,6 +287,31 @@ Bomba* SwapAndActiveBomba()
   return NULL;
 }
 
+//Devuelve el tiempo de encendido de la bomba en minutos
+unsigned long GetBombaWorkingTime(Bomba* bomba)
+{
+  if (!IsBombaOn(bomba))
+    return 0;
+
+  unsigned long delta = 0;
+  unsigned long minutes = 0;
+
+  delta = deltaMillis(millis(), bomba->StartTime);
+  minutes = delta / 60000;
+
+  return minutes;
+}
+
+//Devuelve el tiempo maximo de llenado antes de que se considere que la bomba no funciona.
+unsigned long GetBombaWorkingTimeMaximum(Bomba* bomba)
+{
+  unsigned int avg = bomba->FillTimeMinutesAverage;
+  if (avg > 0)
+    return TANQUE_TIME_TO_FULL_AVERAGE_PERCENTAGE * avg;
+  else
+    return TANQUE_TIME_TO_FULL;
+}
+
 void CleanFillTimes()
 {
   for (int i = 0; i < 10; i++)

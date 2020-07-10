@@ -97,7 +97,6 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 //tension de entrada
 #define FASE_FROM_EEPROM_ENABLED // indica que se debe leer los valores almacenados en la EEPROM y no los valores constantes
-
 #ifndef FASE_FROM_EEPROM_ENABLED
 #define TENSION_ENTRADA 5 //220 Volts, pero para testear lo pongo en 5
 //valores de referencia para el valor de 220V
@@ -118,7 +117,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define CHANGE_MODE_BTN_PIN 13 //selector Manual / Automatico
 
 #ifndef DEBUG
-#define MODO_OUTPUT_VIEW_ENABLED
+#define MODO_OUTPUT_VIEW_ENABLED //Muestra el modo en la pantalla
 #endif
 
 // ====================== BOMBAS ======================
@@ -145,6 +144,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
 
 #define BOMBA_FILL_TIME_HOURS_MAX 6//Tiempo de llenado inicial del tanque en horas. Un numero grande para que no se corte antes de tiempo
+#define BOMBA_REFRESH_WORKING_TIME 60000 //Tiempo entre refrescos de tiempo de trabajo de las bombas (milisegundos)
 
 // ====================== CISTERNA/TANQUE ======================
 // --- CISTERNA ---
@@ -153,7 +153,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // --- TANQUE ---
 #define TANQUE_EMPTY_FULL_PIN  9
-#define TANQUE_TIME_TO_FULL 10000 //tiempo (millisegundos) inicial para el llenado del tanque. Luego calcula el tiempo promedio por tanque y le suma u porcentage
+#define TANQUE_TIME_TO_FULL 10000 //tiempo (millisegundos) inicial para el llenado del tanque. Luego calcula el tiempo promedio por tanque
+#define TANQUE_TIME_TO_FULL_AVERAGE_PERCENTAGE 2 //valor a multiplicar por el tiempo de llenado promedio para obtener el limite maximo de llenado
 
 
 // ====================== ESTADISTICAS ======================
@@ -172,6 +173,7 @@ const unsigned long STATISTICS_TIME_TO_SAVE = (24 / 3) * (60 * 60 * 1000); //3 v
 #define BOMBA_STATE_ERROR_CONTACTOR_ABIERTO -1
 #define BOMBA_STATE_ERROR_CONTACTOR_CERRADO -2
 #define BOMBA_STATE_ERROR_TERMICO -3
+#define BOMBA_STATE_ERROR_FILL_TIMEOUT -4
 
 
 // ====================== FSM BOMBA ESTADOS ======================
@@ -197,6 +199,7 @@ const unsigned long STATISTICS_TIME_TO_SAVE = (24 / 3) * (60 * 60 * 1000); //3 v
 #define AUTO_TANQUE_FULL 7
 #define AUTO_STOPPING_BOMBA 8
 #define AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE 9
+#define AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT 10
 #define AUTO_CHANGE_BOMBA 11
 #define AUTO_ERROR_BOMBA_WORKING 12
 #define AUTO_NULL 0
@@ -228,9 +231,12 @@ typedef struct  {
   unsigned int FillTimeMinutes[10];
   unsigned int FillTimeMinutesAverage;
 
+  unsigned long StartTime;
+  unsigned long RefreshTime;
+
   long ContactorErrorCounter;
   unsigned long StartError;
-  unsigned long Timer;
+  unsigned long Timer; //se usa para controlar el tiempo de arranque o de paro
 } Bomba;
 
 
@@ -274,8 +280,8 @@ typedef struct {
   unsigned long ErrorFaseCount;
   unsigned long LastTimeSaved;
 
-  unsigned long Bomba1OnTime;
-  unsigned long Bomba2OnTime;
+  //unsigned long Bomba1OnTime;
+  //unsigned long Bomba2OnTime;
   unsigned long FaseErrorBeginTime;
   boolean Changed;
 } Statistics;
@@ -377,53 +383,53 @@ void setup() {
 //************************************************//
 
 void loop() {
-  /*
-    ReadCommands();
-  */
+
+  ReadCommands();
+
   //Veo el reset
   ReadResetAndClearStatisticsButton();
-  /*
-    ReadSwapButton();
 
-    //valido los niveles para visualizar en el display
-    ReadTanqueSensors();
+  ReadSwapButton();
 
-    //valido la cisterna. Actualizo el estado de la variable.
-    ReadCisternaSensors();
+  //valido los niveles para visualizar en el display
+  ReadTanqueSensors();
 
-    //leo los sensores de las bombas
-    ReadBombaSensors();
+  //valido la cisterna. Actualizo el estado de la variable.
+  ReadCisternaSensors();
 
-    //leo la habilitación de las bombas
-    ReadEnabledBombas();
-  */
+  //leo los sensores de las bombas
+  ReadBombaSensors();
+
+  //leo la habilitación de las bombas
+  ReadEnabledBombas();
+
   //leo el estado de las fases
   //Las bombas se detienen asi que el circuito seguiria normal.......pero no deberia arrancar
   ReadFases();
-  /*
-    //leo el modo de ejecución (MANUAL o AUTOMATICO)
-    ReadExecutionMode();
 
-    //ejecuta la alarma si corresponde
-    ReadAlarm();
+  //leo el modo de ejecución (MANUAL o AUTOMATICO)
+  ReadExecutionMode();
 
-    ReadPrintStatus();
-  */
+  //ejecuta la alarma si corresponde
+  ReadAlarm();
+
+  ReadPrintStatus();
+
   //actualizo la vista si corresponde
   UpdateView();
-  /*
-    #ifdef DEBUG
-    if (!IsContinueButtonPressed())
-      return;
-    else
-      Serial.println(F("Continue"));
-    #endif
 
-    // put your main code here, to run repeatedly:
-    CicladorLoop();
+#ifdef DEBUG
+  if (!IsContinueButtonPressed())
+    return;
+  else
+    Serial.println(F("Continue"));
+#endif
 
-    SaveStatistics();
-  */
+  // put your main code here, to run repeatedly:
+  CicladorLoop();
+
+  SaveStatistics();
+
 }
 
 

@@ -4,6 +4,8 @@ void BombaStateMachine(Bomba* bomba)
   bomba->NextMachineState = FSM_BOMBA_NULL;
   PrintEnterStateBombaFSM(bomba);
 
+  unsigned long now = millis();
+
   switch (bomba->MachineState)
   {
     case FSM_BOMBA_OFF:
@@ -16,6 +18,7 @@ void BombaStateMachine(Bomba* bomba)
         UpdateBombaDisplay(bomba);
         //registro si es modo automatico....sino puede funcionar sin llenado completo
         Statistics_BombaOff(bomba, IsAutomaticMode());
+        bomba->StartTime = 0;
         PrintBombaMessage(F("Bomba OFF"));
         break;
       }
@@ -78,13 +81,13 @@ void BombaStateMachine(Bomba* bomba)
 
       if (IsFirstTimeInState(bomba))
       {
-        bomba->Timer = millis();
+        bomba->Timer = now;
         PrintBombaMessage(F("Iniciando timer"));
         break;
       }
 
       //espero un tiempo prudencial hasta que arranque la bomba
-      wait = deltaMillis(millis(), bomba->Timer);
+      wait = deltaMillis(now, bomba->Timer);
       //espero a que inicie la bomba activa que deberia estar en ON.
       //sino se inicia => el contactor fallo
       if (wait > BOMBA_TURNING_ON_TIME)
@@ -105,6 +108,8 @@ void BombaStateMachine(Bomba* bomba)
 
       if (IsFirstTimeInState(bomba))
       {
+        bomba->StartTime = now; //inicio de la bomba
+        bomba->RefreshTime = now; //refresco de la vista
         bomba->State = BOMBA_STATE_ON;
         bomba->ContactorErrorCounter = 0; //reseteo los errores del contactor ya que se encendio.
         UpdateBombaDisplay(bomba);
@@ -144,6 +149,13 @@ void BombaStateMachine(Bomba* bomba)
         break;
       }
 
+      //muestro el tiempo en pantalla
+      unsigned long delta = deltaMillis(now, bomba->RefreshTime);
+      if (delta > BOMBA_REFRESH_WORKING_TIME){
+        bomba->RefreshTime = now;
+        UpdateBombaWorkingTime(bomba);
+      }
+      
       break;
 
 
@@ -168,13 +180,13 @@ void BombaStateMachine(Bomba* bomba)
 
       if (IsFirstTimeInState(bomba))
       {
-        bomba->Timer = millis();
+        bomba->Timer = now;
         PrintBombaMessage(F("Iniciando timer"));
         break;
       }
 
       //espero un tiempo prudencial hasta que arranque la bomba
-      wait = deltaMillis(millis(), bomba->Timer);
+      wait = deltaMillis(now, bomba->Timer);
       //espero a que inicie....la bomba activa deberia estar en ON.
       if (wait > BOMBA_TURNING_OFF_TIME)
       {
@@ -261,7 +273,7 @@ void BombaStateMachine(Bomba* bomba)
         StartAlarmBombaContactorAbierto(bomba);
         bomba->State = BOMBA_STATE_ERROR_CONTACTOR_ABIERTO;
         bomba->ContactorErrorCounter = bomba->ContactorErrorCounter + 1;
-        bomba->StartError = millis();
+        bomba->StartError = now;
         UpdateBombaDisplay(bomba);
         PrintBombaMessage(F("Contactor abierto"));
         break;
@@ -270,7 +282,7 @@ void BombaStateMachine(Bomba* bomba)
       //despues de un tiempo deberia salir del error y probar de nuevo
       if (bomba->ContactorErrorCounter < BOMBA_CONTACTOR_ERROR_INTENTOS_MAX)
       {
-        unsigned long delta = deltaMillis(millis(), bomba->StartError);
+        unsigned long delta = deltaMillis(now, bomba->StartError);
         if (delta > BOMBA_CONTACTOR_ERROR_INTERVAL)
         {
           StopAlarmBomba(bomba);
@@ -311,7 +323,7 @@ void BombaStateMachine(Bomba* bomba)
       if (IsFirstTimeInState(bomba))
       {
         bomba->State = BOMBA_STATE_ERROR_TERMICO;
-        bomba->StartError = millis();
+        bomba->StartError = now;
         UpdateBombaDisplay(bomba);
         Statistics_BombaErrorTermico(bomba);
         PrintBombaMessage(F("Error Termico-Start Alarm"));
