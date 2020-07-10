@@ -14,7 +14,7 @@ void SaveStatistics()
   {
     unsigned long curr = millis();
     unsigned long delta = deltaMillis(curr,  statistics.LastTimeSaved);
-    
+
     if (delta > STATISTICS_TIME_TO_SAVE)
     {
       statistics.LastTimeSaved = curr;
@@ -97,8 +97,6 @@ void Stadistics_AddFillTime(Bomba* bomba, unsigned int fillTime)
 
   bomba->FillTimeMinutes[0] = fillTime;
   bomba->FillTimeMinutesAverage = total / count;
-
-  
 }
 
 void Statistics_BombaErrorTermico(Bomba* bomba)
@@ -150,11 +148,13 @@ void CleanStatistics()
   statistics.ErrorFaseTotalMinutes = 0;
   statistics.ErrorFaseCount = 0;
 
-  statistics.Changed = true;
+  statistics.Changed = false;
 
   statistics.Bomba1OnTime = 0;
   statistics.Bomba2OnTime = 0;
   statistics.FaseErrorBeginTime = 0;
+
+  statistics.LastTimeSaved = millis();
 
   //guardo las estadisticas reiniciadas
   DoSaveStatistics();
@@ -162,7 +162,65 @@ void CleanStatistics()
 
 void DoSaveStatistics()
 {
+
 #ifdef STATISTICS_SAVE_ENABLED
+  unsigned long lAux = 0;
+  unsigned int iAux = 0;
+
+  //cantidad de usos
+  EEPROM.get(BOMBA1_USES_ADDR, lAux);
+  if (lAux != statistics.Bomba1Uses)
+    EEPROM.put(BOMBA1_USES_ADDR, statistics.Bomba1Uses);
+
+  EEPROM.get(BOMBA2_USES_ADDR, lAux);
+  if (lAux != statistics.Bomba2Uses)
+    EEPROM.put(BOMBA2_USES_ADDR, statistics.Bomba2Uses);
+
+
+
+  //Minutos de uso
+  EEPROM.get(BOMBA1_TOTAL_MINUTES_ADDR, lAux);
+  if (lAux != statistics.Bomba1TotalMinutes)
+    EEPROM.put(BOMBA1_TOTAL_MINUTES_ADDR, statistics.Bomba1TotalMinutes);
+
+  EEPROM.get(BOMBA2_TOTAL_MINUTES_ADDR, lAux);
+  if (lAux != statistics.Bomba2TotalMinutes)
+    EEPROM.put(BOMBA2_TOTAL_MINUTES_ADDR, statistics.Bomba2TotalMinutes);
+
+
+
+  //Cantidad de errores de termico
+  EEPROM.get(BOMBA1_ERROR_TERMICO_COUNT_ADDR, lAux);
+  if (lAux != statistics.Bomba1ErrorTermicoCount)
+    EEPROM.put(BOMBA1_ERROR_TERMICO_COUNT_ADDR, statistics.Bomba1ErrorTermicoCount);
+
+  EEPROM.get(BOMBA2_ERROR_TERMICO_COUNT_ADDR, lAux);
+  if (lAux != statistics.Bomba2ErrorTermicoCount)
+    EEPROM.put(BOMBA2_ERROR_TERMICO_COUNT_ADDR, statistics.Bomba2ErrorTermicoCount);
+
+
+
+  //tiempo de llenado
+  EEPROM.get(BOMBA1_FILLING_TIME_MINUTES_ADDR, iAux);
+  if (iAux != bomba1.FillTimeMinutesAverage)
+    EEPROM.put(BOMBA1_FILLING_TIME_MINUTES_ADDR, bomba1.Bomba1ErrorTermicoCount);
+
+  EEPROM.get(BOMBA2_FILLING_TIME_MINUTES_ADDR, iAux);
+  if (iAux != bomba2.FillTimeMinutesAverage)
+    EEPROM.put(BOMBA2_FILLING_TIME_MINUTES_ADDR, bomba2.Bomba2ErrorTermicoCount);
+
+
+
+  //Cantidad de errores de fase
+  EEPROM.get(ERROR_FASE_COUNT_ADDR, lAux);
+  if (lAux != statistics.ErrorFaseCount)
+    EEPROM.put(ERROR_FASE_COUNT_ADDR, statistics.ErrorFaseCount);
+
+
+  //cantidad de minutos por error de fase
+  EEPROM.get(ERROR_FASE_TOTAL_MINUTES_ADDR, lAux);
+  if (lAux != statistics.ErrorFaseTotalMinutes)
+    EEPROM.put(ERROR_FASE_TOTAL_MINUTES_ADDR, statistics.ErrorFaseTotalMinutes);
 
 #endif
 }
@@ -170,6 +228,91 @@ void DoSaveStatistics()
 void ReadStatistics()
 {
 #ifdef STATISTICS_SAVE_ENABLED
+  unsigned long lAux = 0;
+  unsigned int iAux = 0;
+
+  //cantidad de usos
+  EEPROM.get(BOMBA1_USES_ADDR, lAux);
+  statistics.Bomba1Uses = lAux;
+
+  EEPROM.get(BOMBA2_USES_ADDR, lAux);
+  statistics.Bomba2Uses = lAux;
+
+
+  //Minutos de uso
+  EEPROM.get(BOMBA1_TOTAL_MINUTES_ADDR, lAux);
+  statistics.Bomba1TotalMinutes = lAux;
+
+  EEPROM.get(BOMBA2_TOTAL_MINUTES_ADDR, lAux);
+  statistics.Bomba2TotalMinutes = lAux;
+
+
+  //Cantidad de errores de termico
+  EEPROM.get(BOMBA1_ERROR_TERMICO_COUNT_ADDR, lAux);
+  statistics.Bomba1ErrorTermicoCount = lAux;
+
+  EEPROM.get(BOMBA2_ERROR_TERMICO_COUNT_ADDR, lAux);
+  statistics.Bomba2ErrorTermicoCount = lAux;
+
+
+  //tiempo de llenado
+  EEPROM.get(BOMBA1_FILLING_TIME_MINUTES_ADDR, iAux);
+  bomba1.FillTimeMinutesAverage = iAux;
+
+  EEPROM.get(BOMBA2_FILLING_TIME_MINUTES_ADDR, iAux);
+  bomba2.FillTimeMinutesAverage = iAux;
+
+
+  //Cantidad de errores de fase
+  EEPROM.get(ERROR_FASE_COUNT_ADDR, lAux);
+  statistics.ErrorFaseCount = lAux;
+
+
+  //cantidad de minutos por error de fase
+  EEPROM.get(ERROR_FASE_TOTAL_MINUTES_ADDR, lAux);
+  statistics.ErrorFaseTotalMinutes = lAux;
 
 #endif
+}
+
+void printStatistics()
+{
+  Serial.println(F("Valores Estadisticos"));
+  Serial.println(F("BOMBA 1"));
+
+  Serial.print(F("Cantidad de Usos: "));
+  Serial.println(statistics.Bomba1Uses);
+
+  Serial.print(F("Minutos totales de uso: "));
+  Serial.println(statistics.Bomba1TotalMinutes);
+
+  Serial.print(F("Cantidad de errores de termico: "));
+  Serial.println(statistics.Bomba1ErrorTermicoCount);
+
+  Serial.print(F("Tiempo promedio de llenado de tanque (minutos): "));
+  Serial.println(bomba1.FillTimeMinutesAverage);
+
+  Serial.println();
+  Serial.println(F("BOMBA 2"));
+
+  Serial.print(F("Cantidad de Usos: "));
+  Serial.println(statistics.Bomba2Uses);
+
+  Serial.print(F("Minutos totales de uso: "));
+  Serial.println(statistics.Bomba2TotalMinutes);
+
+  Serial.print(F("Cantidad de errores de termico: "));
+  Serial.println(statistics.Bomba2ErrorTermicoCount);
+
+  Serial.print(F("Tiempo promedio de llenado de tanque (minutos): "));
+  Serial.println(bomba2.FillTimeMinutesAverage);
+
+  Serial.println();
+  Serial.println(F("ERRORES DE FASE"));
+
+  Serial.print(F("Cantidad de errores de fase: "));
+  Serial.println(statistics.ErrorFaseCount);
+
+  Serial.print(F("Tiempo total de perdida de fase (minutos): "));
+  Serial.println(statistics.ErrorFaseTotalMinutes);
 }

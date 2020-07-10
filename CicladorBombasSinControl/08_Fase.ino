@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 // --- MODO ---
 void SetupFase()
 {
@@ -9,9 +11,45 @@ void SetupFase()
   fase2.IsOk = true;
   fase3.IsOk = true;
 
-  #ifdef FASE_FROM_EEPROM_ENABLED
+#ifdef FASE_FROM_EEPROM_ENABLED
 
-  #else
+  int voltRef = 0;
+  int cal = 0;
+  EEPROM.get(FASE1_TENSION_ENTRADA_ADDR, voltRef);
+  EEPROM.put(FASE1_FACTOR_CONVERSION_ADDR, cal);
+
+  fase1.InputVoltsReference = voltRef;
+  fase1.ConversionFactor = cal;
+
+  EEPROM.put(FASE2_TENSION_ENTRADA_ADDR, voltRef);
+  EEPROM.put(FASE2_FACTOR_CONVERSION_ADDR, cal);
+
+  fase2.InputVoltsReference = voltRef;
+  fase2.ConversionFactor = cal;
+
+  EEPROM.put(FASE3_TENSION_ENTRADA_ADDR, voltRef);
+  EEPROM.put(FASE3_FACTOR_CONVERSION_ADDR, cal);
+
+  fase3.InputVoltsReference = voltRef;
+  fase3.ConversionFactor = cal;
+
+  Serial.print(F("Fase 1 - Tension de referencia: "));
+  Serial.print(fase1.InputVoltsReference);
+  Serial.print(F(", Valor de calibración: "));
+  Serial.println(fase1.ConversionFactor);
+
+  Serial.print(F("Fase 2 - Tension de referencia: "));
+  Serial.print(fase2.InputVoltsReference);
+  Serial.print(F(", Valor de calibración: "));
+  Serial.println(fase2.ConversionFactor);
+
+  Serial.print(F("Fase 3 - Tension de referencia: "));
+  Serial.print(fase3.InputVoltsReference);
+  Serial.print(F(", Valor de calibración: "));
+  Serial.println(fase3.ConversionFactor);
+
+#else
+
   fase1.InputVoltsReference = TENSION_ENTRADA;
   fase2.InputVoltsReference = TENSION_ENTRADA;
   fase3.InputVoltsReference = TENSION_ENTRADA;
@@ -19,7 +57,8 @@ void SetupFase()
   fase1.ConversionFactor = FASE1_220_VALUE;
   fase2.ConversionFactor = FASE2_220_VALUE;
   fase3.ConversionFactor = FASE3_220_VALUE;
-  #endif
+
+#endif
 
   fase1.ReadCount = 0;
   fase2.ReadCount = 0;
@@ -33,7 +72,6 @@ void SetupFase()
   fase2.LastRead = 0;
   fase3.LastRead = 0;
 }
-
 
 
 void ReadFases()
@@ -147,12 +185,12 @@ void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
   fase->ReadCount = fase->ReadCount + 1;
   fase->ReadTotal = fase->ReadTotal + volts;
   fase->LastRead = readTime;
-/*
-  Serial.print(F("Count: "));
-  Serial.print(fase->ReadCount);
-  Serial.print(F(" Sum Total: "));
-  Serial.println(fase->ReadTotal);
-*/
+  /*
+    Serial.print(F("Count: "));
+    Serial.print(fase->ReadCount);
+    Serial.print(F(" Sum Total: "));
+    Serial.println(fase->ReadTotal);
+  */
   if (fase->ReadCount >= FASE_READ_COUNT_MAX)
   {
     //calculo el procentaje
@@ -160,12 +198,12 @@ void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
 
     fase->Voltage = value;
     fase->IsOk = fase->Voltage > FASE_MIN_VOLTAGE;
-/*
-    Serial.print(F("Voltage: "));
-    Serial.print(fase->Voltage);
-    Serial.print(F(" IsOk: "));
-    Serial.println(fase->IsOk);
-*/
+    /*
+        Serial.print(F("Voltage: "));
+        Serial.print(fase->Voltage);
+        Serial.print(F(" IsOk: "));
+        Serial.println(fase->IsOk);
+    */
     //reseteo
     fase->ReadCount = 0;
     fase->ReadTotal = 0;
@@ -178,40 +216,91 @@ void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
 //                  FASE CALIBRATION
 // *************************************************** //
 
-int calibrateFase(int pinNumber, int faseNumber, String voltsStr)
+void calibrateFase(int pinNumber, int faseNumber, String voltsStr)
 {
   voltsStr.trim();
   long inputVolts = voltsStr.toInt();
 
-  if (inputVolts > 0)
+  if (inputVolts <= 0)
   {
-    Serial.print(F("Inicio calibracion Fase "));
-    Serial.println(faseNumber);
-    Serial.print(F("Tension de referencia: "));
-    Serial.print(inputVolts);
+    Serial.println(F("La tension de referencia es 0 o no está definida. No es posible calibrar la fase."));
+    return;
+  }
 
-    //tengo que leer el valor de la fase y sacar un promedio
-    float total = 0;
+  int calibration = doCalibrateFase(pinNumber, faseNumber, inputVolts);
 
-    for (int i = 0; i < 10; i++)
+  if (calibration > 0)
+  {
+    if (faseNumber == 1)
     {
-      int fase1Val = analogRead(pinNumber);
+      EEPROM.put(FASE1_TENSION_ENTRADA_ADDR, inputVolts);
+      EEPROM.put(FASE1_FACTOR_CONVERSION_ADDR, calibration);
 
-      total = total + fase1Val;
+      //actualizo los valores actuales
+      fase1.InputVoltsReference = inputVolts;
+      fase1.ConversionFactor = calibration;
 
-      delay(FASE_WAIT_BETWEEN_READS);
+    }
+    else if (faseNumber == 2)
+    {
+      EEPROM.put(FASE2_TENSION_ENTRADA_ADDR, inputVolts);
+      EEPROM.put(FASE2_FACTOR_CONVERSION_ADDR, calibration);
+
+      //actualizo los valores actuales
+      fase2.InputVoltsReference = inputVolts;
+      fase2.ConversionFactor = calibration;
+    }
+    else
+    {
+      EEPROM.put(FASE3_TENSION_ENTRADA_ADDR, inputVolts);
+      EEPROM.put(FASE3_FACTOR_CONVERSION_ADDR, calibration);
+
+      //actualizo los valores actuales
+      fase3.InputVoltsReference = inputVolts;
+      fase3.ConversionFactor = calibration;
     }
 
-    float conversionFactor = total / 10;
-    int cFactor = (int) conversionFactor;    
+    Serial.print(F("Calibracion fase "));
+    Serial.print(faseNumber);
+    Serial.println(F(" guardada."));
 
-    Serial.print(F("Fin calibracion Fase: "));
-    Serial.println(faseNumber);
-    Serial.print(F("Constante obtenida [0 - 1023]: "));
-    Serial.println(cFactor);
+    Serial.print(F("Tension de entrada: "));
+    Serial.println(inputVolts);
 
-    return cFactor;
+    Serial.print(F("Valor de calibración: "));
+    Serial.println(calibration);
   }
-  else
-    return -1;
+}
+
+int doCalibrateFase(int pinNumber, int faseNumber, int inputVolts)
+{
+  Serial.print(F("Inicio calibracion Fase "));
+  Serial.println(faseNumber);
+  Serial.print(F("Tension de referencia: "));
+  Serial.print(inputVolts);
+
+  //tengo que leer el valor de la fase y sacar un promedio
+  float total = 0;
+
+  for (int i = 0; i < 10; i++)
+  {
+    int fase1Val = analogRead(pinNumber);
+
+    Serial.print(F("Valor leido: "));
+    Serial.println(fase1Val);
+
+    total = total + fase1Val;
+
+    delay(FASE_WAIT_BETWEEN_READS);
+  }
+
+  float conversionFactor = total / 10;
+  int cFactor = (int) conversionFactor;
+
+  Serial.print(F("Fin calibracion Fase: "));
+  Serial.println(faseNumber);
+  Serial.print(F("Constante obtenida [0 - 1023]: "));
+  Serial.println(cFactor);
+
+  return cFactor;
 }

@@ -25,27 +25,27 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 //INT : 2 BYTES
 //LONG: 4 BYTES
 //ints
-#define FASE1_TENSION_ENTRADA_ADDR 0
-#define FASE2_TENSION_ENTRADA_ADDR 2
-#define FASE3_TENSION_ENTRADA_ADDR 4
+#define FASE1_TENSION_ENTRADA_ADDR 0 //int
+#define FASE2_TENSION_ENTRADA_ADDR 2 //int
+#define FASE3_TENSION_ENTRADA_ADDR 4 //int
 
-#define FASE1_FACTOR_CONVERSION_ADDR 6
-#define FASE2_FACTOR_CONVERSION_ADDR 8
-#define FASE3_FACTOR_CONVERSION_ADDR 10
+#define FASE1_FACTOR_CONVERSION_ADDR 6  //int
+#define FASE2_FACTOR_CONVERSION_ADDR 8  //int
+#define FASE3_FACTOR_CONVERSION_ADDR 10 //int
 
-//longs
-#define BOMBA1_USES_ADDR 20
-#define BOMBA1_TOTAL_MINUTES_ADDR 24
-#define BOMBA1_ERROR_TERMICO_COUNT_ADDR 28
-#define BOMBA1_FILLING_TIME_MINUTES_ADDR 32
 
-#define BOMBA2_USES_ADDR 40
-#define BOMBA2_TOTAL_MINUTES_ADDR 44
-#define BOMBA2_ERROR_TERMICO_COUNT_ADDR 48
-#define BOMBA2_FILLING_TIME_MINUTES_ADDR 52
+#define BOMBA1_USES_ADDR 20 //unsigned long
+#define BOMBA1_TOTAL_MINUTES_ADDR 24 //unsigned long
+#define BOMBA1_ERROR_TERMICO_COUNT_ADDR 28 //unsigned long
+#define BOMBA1_FILLING_TIME_MINUTES_ADDR 32 //unsigned int
 
-#define ERROR_FASE_TOTAL_MINUTES_ADDR 60
-#define ERROR_FASE_COUNT_ADDR 64
+#define BOMBA2_USES_ADDR 40 //unsigned long
+#define BOMBA2_TOTAL_MINUTES_ADDR 44 //unsigned long
+#define BOMBA2_ERROR_TERMICO_COUNT_ADDR 48 //unsigned long
+#define BOMBA2_FILLING_TIME_MINUTES_ADDR 52 //unsigned int
+
+#define ERROR_FASE_TOTAL_MINUTES_ADDR 60 //unsigned long
+#define ERROR_FASE_COUNT_ADDR 64 //unsigned long
 
 
 // ****************************************************************** //
@@ -99,11 +99,11 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define FASE_FROM_EEPROM_ENABLED // indica que se debe leer los valores almacenados en la EEPROM y no los valores constantes
 
 #ifndef FASE_FROM_EEPROM_ENABLED
-  #define TENSION_ENTRADA 5 //220 Volts, pero para testear lo pongo en 5
-  //valores de referencia para el valor de 220V
-  #define FASE1_220_VALUE 1023
-  #define FASE2_220_VALUE 1023
-  #define FASE3_220_VALUE 1023
+#define TENSION_ENTRADA 5 //220 Volts, pero para testear lo pongo en 5
+//valores de referencia para el valor de 220V
+#define FASE1_220_VALUE 1023
+#define FASE2_220_VALUE 1023
+#define FASE3_220_VALUE 1023
 #endif
 
 
@@ -140,9 +140,11 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA_USES_MAX 1
 #define BOMBA_TURNING_ON_TIME 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
 #define BOMBA_TURNING_OFF_TIME 5000 //tiempo que espera hasta que el contactor avise que se abrio.
-#define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 100 //Maxima cantidad de intentos
+
+#define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 0 //Maxima cantidad de intentos
 #define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
 
+#define BOMBA_FILL_TIME_HOURS_MAX 6//Tiempo de llenado inicial del tanque en horas. Un numero grande para que no se corte antes de tiempo
 
 // ====================== CISTERNA/TANQUE ======================
 // --- CISTERNA ---
@@ -156,9 +158,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== ESTADISTICAS ======================
 //#define STATISTICS_SAVE_ENABLED
-const long STATISTICS_TIME_TO_SAVE = (1000 * 60) * 60; //una vez por hora...si cambia
+const unsigned long STATISTICS_TIME_TO_SAVE = (24 / 3) * (60 * 60 * 1000); //3 veces por dia. Valor expresado en milisegundos
 #define CLEAN_STADISTICS_PRESS_TIME 5000 //10 segundos - tiempo (milisegundos) que se tiene que tener presionado el boton reset para limpiar las estadisticas
-
 
 
 

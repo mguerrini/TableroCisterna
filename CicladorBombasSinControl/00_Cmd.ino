@@ -16,19 +16,33 @@ void ReadCommands()
 
     if (cmd.startsWith("CAL_FASE_1"))
     {
-      int factor1 = calibrateFase(FASE1_INPUT_PIN, 1, cmd.substring(10));
+      calibrateFase(FASE1_INPUT_PIN, 1, cmd.substring(10));
     }
     else if (cmd.startsWith("CAL_FASE_2"))
     {
-      int factor2 = calibrateFase(FASE2_INPUT_PIN, 2, cmd.substring(10));
+      calibrateFase(FASE2_INPUT_PIN, 2, cmd.substring(10));
     }
     else if (cmd.startsWith("CAL_FASE_3"))
     {
-      int factor3 = calibrateFase(FASE3_INPUT_PIN, 3, cmd.substring(10));
+      calibrateFase(FASE3_INPUT_PIN, 3, cmd.substring(10));
+    }
+    else if (cmd == "DEL_FILL_DATA") 
+    {
+      //ELIMINA LOS VALORES DE TIEMPO DE LLENADO DEL TAMQUE
+      CleanFillTimes();
+      //doSaveStatisctics(); //guarda el valor promedio de llenado
+    }
+    else if(cmd == "DEL_ST")
+    {
+      CleanStatistics();
     }
     else if (cmd == "S" || cmd == "s")
     {
       DoPrintStatus();
+    }
+    else if (cmd == "PRINT_STATISTICS")
+    {
+      printStatistics();
     }
   }
 }

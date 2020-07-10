@@ -30,7 +30,7 @@ void SetupBombas()
 
   //leo el tiempo promedio de llenado
 
-  
+
   //activo la bomba 1
   ActivateBomba(&bomba1);
 
@@ -286,6 +286,19 @@ Bomba* SwapAndActiveBomba()
 
   return NULL;
 }
+
+void CleanFillTimes()
+{
+  for (int i = 0; i < 10; i++)
+  {
+    bomba1.FillTimeMinutes[i] = 0;
+    bomba2.FillTimeMinutes[i] = 0;
+
+    bomba1.FillTimeMinutesAverage = 0;
+    bomba1.FillTimeMinutesAverage = 0;
+  }
+}
+
 
 bool IsBombaSwapButtonPressed()
 {
