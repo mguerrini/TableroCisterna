@@ -1,14 +1,25 @@
-//--- Sensores Tanque y Cisterna ---
+// ****************************************************************** //
+//                          SETUP
+// ****************************************************************** //
 
 void SetupLevelSensors()
 {
+  //inicializo las variables de los sensores
+  IsTanqueEmpty();
+  IsCisternaEmpty();
+
+  //espero a que se estabilice
+  delay(BTN_PRESSED_TIME * 2);
+
+  //leo el valor definitivo
   sensores.IsCisternaSensorMinVal = IsCisternaEmpty();
   sensores.IsTanqueSensorMinVal = IsTanqueEmpty();
   sensores.IsTanqueSensorMaxVal = IsTanqueFull();
-
-  UpdateTanqueDisplay();
-  UpdateCisternaDisplay();
 }
+
+// ****************************************************************** //
+//                          READ
+// ****************************************************************** //
 
 void ReadCisternaSensors()
 {
@@ -29,7 +40,7 @@ void ReadCisternaSensors()
   if (sensores.IsCisternaSensorMinVal)
   {
     sensores.CisternaEmptyMillis = deltaMillis(millis(), sensores.CisternaEmptyStartTime);
-    
+
     if (sensores.CisternaEmptyMillis > CISTERNA_EMPTY_MAX_TIME)
     {
       StartCisternaEmptyAlarm();
@@ -39,11 +50,10 @@ void ReadCisternaSensors()
   {
     sensores.CisternaEmptyStartTime = 0;
     sensores.CisternaEmptyMillis = 0;
-    
+
     StopCisternaEmptyAlarm();
   }
 }
-
 
 
 void ReadTanqueSensors()
@@ -65,6 +75,10 @@ void ReadTanqueSensors()
   }
 }
 
+// ****************************************************************** //
+//                          PROPERTIES
+// ****************************************************************** //
+
 boolean IsCisternaFull()
 {
   return !IsCisternaEmpty();
@@ -72,8 +86,8 @@ boolean IsCisternaFull()
 
 boolean IsCisternaEmpty()
 {
-  static unsigned long startTime = 0;
-  static boolean state;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(CISTERNA_EMPTY_PIN);
   static boolean isPressed;
 
   IsButtonPressed(CISTERNA_EMPTY_PIN, state, isPressed, startTime);
@@ -84,8 +98,8 @@ boolean IsCisternaEmpty()
 
 boolean IsTanqueEmpty()
 {
-  static unsigned long startTime = 0;
-  static boolean state;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(TANQUE_EMPTY_FULL_PIN);
   static boolean isPressed;
 
   IsButtonPressed(TANQUE_EMPTY_FULL_PIN, state, isPressed, startTime);

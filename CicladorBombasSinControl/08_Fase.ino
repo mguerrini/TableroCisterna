@@ -1,6 +1,8 @@
 #include <EEPROM.h>
 
-// --- MODO ---
+// ****************************************************************** //
+//                          SETUP
+// ****************************************************************** //
 void SetupFase()
 {
   fase1.Voltage = 220;
@@ -16,48 +18,53 @@ void SetupFase()
   int voltRef = 0;
   int cal = 0;
   EEPROM.get(FASE1_TENSION_ENTRADA_ADDR, voltRef);
-  EEPROM.put(FASE1_FACTOR_CONVERSION_ADDR, cal);
+  EEPROM.get(FASE1_FACTOR_CONVERSION_ADDR, cal);
 
   fase1.InputVoltsReference = voltRef;
   fase1.ConversionFactor = cal;
 
-  EEPROM.put(FASE2_TENSION_ENTRADA_ADDR, voltRef);
-  EEPROM.put(FASE2_FACTOR_CONVERSION_ADDR, cal);
+  EEPROM.get(FASE2_TENSION_ENTRADA_ADDR, voltRef);
+  EEPROM.get(FASE2_FACTOR_CONVERSION_ADDR, cal);
 
   fase2.InputVoltsReference = voltRef;
   fase2.ConversionFactor = cal;
 
-  EEPROM.put(FASE3_TENSION_ENTRADA_ADDR, voltRef);
-  EEPROM.put(FASE3_FACTOR_CONVERSION_ADDR, cal);
+  EEPROM.get(FASE3_TENSION_ENTRADA_ADDR, voltRef);
+  EEPROM.get(FASE3_FACTOR_CONVERSION_ADDR, cal);
 
   fase3.InputVoltsReference = voltRef;
   fase3.ConversionFactor = cal;
 
-  Serial.print(F("Fase 1 - Tension de referencia: "));
+  Serial.print(F("   Fase 1 - Tension de referencia: "));
   Serial.print(fase1.InputVoltsReference);
   Serial.print(F(", Valor de calibración: "));
   Serial.println(fase1.ConversionFactor);
 
-  Serial.print(F("Fase 2 - Tension de referencia: "));
+  Serial.print(F("   Fase 2 - Tension de referencia: "));
   Serial.print(fase2.InputVoltsReference);
   Serial.print(F(", Valor de calibración: "));
   Serial.println(fase2.ConversionFactor);
 
-  Serial.print(F("Fase 3 - Tension de referencia: "));
+  Serial.print(F("   Fase 3 - Tension de referencia: "));
   Serial.print(fase3.InputVoltsReference);
   Serial.print(F(", Valor de calibración: "));
   Serial.println(fase3.ConversionFactor);
 
-#else
+#endif
 
+#ifndef FASE1_ENABLED
   fase1.InputVoltsReference = TENSION_ENTRADA;
-  fase2.InputVoltsReference = TENSION_ENTRADA;
-  fase3.InputVoltsReference = TENSION_ENTRADA;
-
   fase1.ConversionFactor = FASE1_220_VALUE;
-  fase2.ConversionFactor = FASE2_220_VALUE;
-  fase3.ConversionFactor = FASE3_220_VALUE;
+#endif
 
+#ifndef FASE2_ENABLED
+  fase2.InputVoltsReference = TENSION_ENTRADA;
+  fase2.ConversionFactor = FASE2_220_VALUE;
+#endif
+
+#ifndef FASE3_ENABLED
+  fase3.InputVoltsReference = TENSION_ENTRADA;
+  fase3.ConversionFactor = FASE3_220_VALUE;
 #endif
 
   fase1.ReadCount = 0;
@@ -73,6 +80,9 @@ void SetupFase()
   fase3.LastRead = 0;
 }
 
+// ****************************************************************** //
+//                          READ
+// ****************************************************************** //
 
 void ReadFases()
 {
@@ -87,34 +97,21 @@ void ReadFases()
   {
     if (automaticFSM.IsFaseOk)
     {
-      //muestro la pantalla de error
-      ShowErrorFaseView();
-      OnFaseError();
-      Statistics_FaseError_Begin();
-    }
-    else
-    {
       //muestro la pantalla mormal
       ShowMainView();
       OnFaseOk();
       Statistics_FaseError_End();
     }
+    else
+    {
+      //muestro la pantalla de error
+      ShowErrorFaseView();
+      OnFaseError();
+      Statistics_FaseError_Begin();
+    }
 
     automaticFSM.IsFaseOk = isOkCurrVal;
   }
-}
-
-
-void OnFaseError()
-{
-  //desactivar el rele para que se corte la alimentacion
-  digitalWrite(FASE_OUTPUT_PIN, FASE_OUTPUT_CLOSE_RELE);
-}
-
-void OnFaseOk()
-{
-  //normalizar el rele para que vuelva a funcionar la bomba
-  digitalWrite(FASE_OUTPUT_PIN, FASE_OUTPUT_OPEN_RELE);
 }
 
 
@@ -211,6 +208,22 @@ void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
 }
 
 
+// ****************************************************************** //
+//                          METHODS
+// ****************************************************************** //
+
+void OnFaseError()
+{
+  //desactivar el rele para que se corte la alimentacion
+  digitalWrite(FASE_OUTPUT_PIN, FASE_OUTPUT_CLOSE_RELE);
+}
+
+void OnFaseOk()
+{
+  //normalizar el rele para que vuelva a funcionar la bomba
+  digitalWrite(FASE_OUTPUT_PIN, FASE_OUTPUT_OPEN_RELE);
+}
+
 
 // *************************************************** //
 //                  FASE CALIBRATION
@@ -277,7 +290,7 @@ int doCalibrateFase(int pinNumber, int faseNumber, int inputVolts)
   Serial.print(F("Inicio calibracion Fase "));
   Serial.println(faseNumber);
   Serial.print(F("Tension de referencia: "));
-  Serial.print(inputVolts);
+  Serial.println(inputVolts);
 
   //tengo que leer el valor de la fase y sacar un promedio
   float total = 0;

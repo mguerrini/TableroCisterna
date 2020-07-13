@@ -6,18 +6,6 @@
 
 LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-typedef struct {
-  boolean IsMainViewActive = true;
-  boolean IsErrorFaseViewActive = false;
-  boolean IsInfoViewActive = false;
-
-  unsigned long FaseViewLastRefreshTime = 0;
-
-  byte InfoViewNumberActive = 0;
-  unsigned long InfoViewNumberActiveTime = 0;
-} View;
-
-View view = {};
 
 void SetupDisplay()
 {
@@ -36,12 +24,12 @@ void SetupDisplay()
   view.InfoViewNumberActive = 0;
   view.InfoViewNumberActiveTime = 0;
 
-  PrintInitialText();
+  ShowMainView();
 }
 
 //---------------------- VISTAS ----------------------
 
-void UpdateView()
+void RefreshViews()
 {
   if (view.IsMainViewActive)
     return;
@@ -66,6 +54,46 @@ void UpdateView()
   }
 }
 
+void ShowMainView()
+{
+  view.IsMainViewActive = true;
+  view.IsErrorFaseViewActive = false;
+  view.IsInfoViewActive = false;
+
+  lcd.clear();
+  PrintInitialText();
+  UpdateBomba1Display();
+  UpdateBomba2Display();
+
+  UpdateCisternaDisplay();
+  UpdateTanqueDisplay();
+
+  UpdateActiveBombaDisplay();
+
+  UpdateDisplayMode();
+}
+
+void ShowInfoView()
+{
+  if (!view.IsInfoViewActive)
+  {
+    view.IsMainViewActive = false;
+    view.IsErrorFaseViewActive = false;
+    view.IsInfoViewActive = true;
+
+    view.InfoViewNumberActive = 0;
+  }
+  else
+  {
+    view.InfoViewNumberActive = view.InfoViewNumberActive + 1;
+  }
+
+  //muestro la vista
+  ShowNextInfoView();
+
+  //indico la hora de visualizacion
+  view.InfoViewNumberActiveTime =  millis();
+}
 
 void ShowErrorFaseView()
 {
@@ -82,6 +110,7 @@ void ShowErrorFaseView()
   lcd.print(F("*** FALLA DE FASE **"));
   ShowDatosFase();
 }
+
 
 void RefreshFaseView()
 {
@@ -138,44 +167,7 @@ void ShowDatosFase()
 
 }
 
-void ShowMainView()
-{
-  view.IsMainViewActive = true;
-  view.IsErrorFaseViewActive = false;
-  view.IsInfoViewActive = false;
 
-  lcd.clear();
-  PrintInitialText();
-  UpdateBomba1Display();
-  UpdateBomba2Display();
-
-  UpdateCisternaDisplay();
-  UpdateTanqueDisplay();
-
-  UpdateActiveBombaDisplay();
-}
-
-void ShowInfoView()
-{
-  if (!view.IsInfoViewActive)
-  {
-    view.IsMainViewActive = false;
-    view.IsErrorFaseViewActive = false;
-    view.IsInfoViewActive = true;
-
-    view.InfoViewNumberActive = 0;
-  }
-  else
-  {
-    view.InfoViewNumberActive = view.InfoViewNumberActive + 1;
-  }
-
-  //muestro la vista
-  ShowNextInfoView();
-
-  //indico la hora de visualizacion
-  view.InfoViewNumberActiveTime =  millis();
-}
 
 void ShowNextInfoView()
 {
@@ -237,6 +229,8 @@ void ShowNextInfoView()
 
   ShowMainView();
 }
+
+
 
 void PrintBombaView1(Bomba* bomba)
 {
@@ -413,14 +407,28 @@ void UpdateTanqueDisplay()
     lcd.print(F("Descargando"));
 }
 
+void UpdateDisplayMode()
+{
+#ifdef MODO_OUTPUT_VIEW_ENABLED
+  if (IsAutomaticMode())
+    UpdateDisplayToAutoMode();
+  else
+    UpdateDisplayToManualMode();
+#endif
+}
+
 void UpdateDisplayToManualMode()
 {
+#ifdef MODO_OUTPUT_VIEW_ENABLED
   UpdateDisplayMode("M");
+#endif
 }
 
 void UpdateDisplayToAutoMode()
 {
+#ifdef MODO_OUTPUT_VIEW_ENABLED
   UpdateDisplayMode("A");
+#endif
 }
 
 void UpdateDisplayMode(const char* mode)
@@ -466,12 +474,6 @@ void PrintInitialText()
 {
   if (!view.IsMainViewActive)
     return;
-
-  lcd.setCursor(19, 0);
-  if (IsAutomaticMode() == AUTO)
-    lcd.print(F("A"));
-  else
-    lcd.print(F("M"));
 
   lcd.setCursor(0, 0);
   lcd.print(F("B1( ): "));

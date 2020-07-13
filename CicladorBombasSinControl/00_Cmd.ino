@@ -9,6 +9,11 @@ void ReadCommands()
     // read the incoming byte:
     String cmd = Serial.readString();
 
+    Serial.print(F("Comando: "));
+    Serial.println(cmd);
+
+    cmd.trim();
+
     if (cmd.length() == 0)
       return;
 
@@ -26,15 +31,15 @@ void ReadCommands()
     {
       calibrateFase(FASE3_INPUT_PIN, 3, cmd.substring(10));
     }
-    else if (cmd == "DEL_FILL_DATA") 
+    else if (cmd == "DEL_FILL_DATA")
     {
       //ELIMINA LOS VALORES DE TIEMPO DE LLENADO DEL TAMQUE
       CleanFillTimes();
       //doSaveStatisctics(); //guarda el valor promedio de llenado
     }
-    else if(cmd == "DEL_ST")
+    else if (cmd == "DEL_ST")
     {
-      CleanStatistics();
+      CleanStatistics(true);
     }
     else if (cmd == "S" || cmd == "s")
     {
@@ -43,6 +48,10 @@ void ReadCommands()
     else if (cmd == "PRINT_STATISTICS")
     {
       printStatistics();
+    }
+    else
+    {
+      Serial.println(F("Comando invalido."));
     }
   }
 }
@@ -105,26 +114,15 @@ void ReadResetAndClearStatisticsButton()
     automaticFSM.State = AUTO_IDLE;
     automaticFSM.NextState = AUTO_NULL;
 
-    //Read el estado enabled/disabled from EEPROM
-    bomba1.State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
-    bomba1.Uses = 0;
-    bomba1.MachineState = FSM_BOMBA_OFF;
-    bomba1.FromMachineState = FSM_BOMBA_OFF;
-    bomba1.IsTermicoOk = true;
-    bomba1.IsContactorClosed = false;
-
-    bomba2.State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
-    bomba2.Uses = 0;
-    bomba2.MachineState = FSM_BOMBA_OFF;
-    bomba2.FromMachineState = FSM_BOMBA_OFF;
-    bomba2.IsTermicoOk = true;
-    bomba2.IsContactorClosed = false;
+    ResetBomba(&bomba1);
+    ResetBomba(&bomba2);
 
     UpdateBomba1Display();
     UpdateBomba2Display();
     UpdateActiveBombaDisplay();
     UpdateCisternaDisplay();
     UpdateTanqueDisplay();
+    UpdateDisplayMode();
 
     StopAllAlarms();
   }
@@ -132,14 +130,14 @@ void ReadResetAndClearStatisticsButton()
   if (IsCleanStatisticsButtonPressed())
   {
     Serial.println(F("Clean Statistics"));
-    CleanStatistics();
+    CleanStatistics(true);
   }
 }
 
 boolean IsResetButtonPressed()
 {
-  static unsigned long startTime = 0;
-  static boolean state = false;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(RESET_BTN_PIN);
   static boolean isPressed = false;
 
   return IsButtonPressedWithTimeRange(RESET_BTN_PIN, state, isPressed, startTime, 0, CLEAN_STADISTICS_PRESS_TIME);
@@ -147,8 +145,8 @@ boolean IsResetButtonPressed()
 
 boolean IsCleanStatisticsButtonPressed()
 {
-  static unsigned long startTime = 0;
-  static boolean state = false;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(RESET_BTN_PIN);
   static boolean isPressed = false;
 
   return IsButtonPressedWithTimeRange(RESET_BTN_PIN, state, isPressed, startTime, CLEAN_STADISTICS_PRESS_TIME, 0);
@@ -164,7 +162,7 @@ boolean IsCleanStatisticsButtonPressed()
 #ifdef DEBUG
 boolean IsContinueButtonPressed()
 {
-  static unsigned long startTime = 0;
+  static unsigned long startTime = millis();
   static boolean state;
   static boolean isPressed;
 
@@ -173,33 +171,16 @@ boolean IsContinueButtonPressed()
 #endif
 
 
-#ifdef GET_STATUS_BUTTON_ENABLED
-boolean IsGetStatusButtonPressed()
-{
-  static unsigned long startTime = 0;
-  static boolean state = false;
-  static boolean isPressed = false;
 
-  return IsButtonPressed(GET_STATUS_BTN_PIN, state, isPressed, startTime);
-}
-#endif
 
 // *************************************************** //
 //                PRINT STATUS
 // *************************************************** //
-void ReadPrintStatus()
-{
-#ifdef GET_STATUS_BUTTON_ENABLED
-  if (!IsGetStatusButtonPressed())
-    return;
-
-  DoPrintStatus();
-#endif
-}
 
 void DoPrintStatus()
 {
   Serial.println();
+
   //Modo
   if (IsAutomaticMode())
     Serial.println(F("*** MODE: Automatic ***"));
@@ -251,6 +232,30 @@ void DoPrintStatus()
   PrintBomba(&bomba2);
   Serial.println();
 
+  //Vista
+  PrintView();
+
+}
+
+void PrintView()
+{
+  Serial.println(F("*** VIEW ****"));
+  if (view.IsMainViewActive)
+    Serial.println(F("Main View Active: True"));
+  else
+    Serial.println(F("Main View Active: False"));
+  if (view.IsErrorFaseViewActive)
+    Serial.println(F("Fase View Active: True"));
+  else
+    Serial.println(F("Fase View Active: False"));
+
+  if (view.IsInfoViewActive)
+    Serial.println(F("Info View Active: True"));
+  else
+    Serial.println(F("Info View Active: False"));
+
+  Serial.print(F("Info View Active View Number: "));
+  Serial.println(view.InfoViewNumberActive);
 }
 
 void PrintAlarm()
@@ -401,17 +406,17 @@ long mapLocal(float value, float in_min, float in_max, float out_min, float out_
 // *************************************************** //
 
 /*
- * 
-long EEPROMReadlong(long address) {
+
+  long EEPROMReadlong(long address) {
   long four = EEPROM.read(address);
   long three = EEPROM.read(address + 1);
   long two = EEPROM.read(address + 2);
   long one = EEPROM.read(address + 3);
 
   return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
-}
+  }
 
-void EEPROMWritelong(int address, long value) {
+  void EEPROMWritelong(int address, long value) {
   byte four = (value & 0xFF);
   byte three = ((value >> 8) & 0xFF);
   byte two = ((value >> 16) & 0xFF);
@@ -421,7 +426,7 @@ void EEPROMWritelong(int address, long value) {
   EEPROM.write(address + 1, three);
   EEPROM.write(address + 2, two);
   EEPROM.write(address + 3, one);
-}
+  }
 
 */
 

@@ -10,10 +10,6 @@
 #define DEBUG_CONTINUE_PIN A3
 #endif
 
-//#define GET_STATUS_BUTTON_ENABLED
-#ifdef GET_STATUS_BUTTON_ENABLED
-#define GET_STATUS_BTN_PIN 2 //no se usa si no esta definido
-#endif
 
 //funciones con referencias
 boolean IsButtonPressed(int pin, boolean &state, boolean &isPressed, unsigned long &startTime);
@@ -58,12 +54,11 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define VIEW_INFO_PIN A0 //Muestra información estadisticas y valores varios
 
 #define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
-#define IS_CHANGE_MODE_PULSADOR true //tipo de boton, pulsador o llave
-
+#define BTN_PRESSED_TIME 20 //20 milisegundos de boton presionado, para evitar rebote
 
 // ====================== INVERSOR ======================
 //salida al rele que activa el Rele de los contactores
-#define BOMBA_SWAP_RELE_PIN A2
+#define BOMBA_SWAP_RELE_PIN 13
 //valor para Bomba1 Activa
 #define BOMBA1_ACTIVE  HIGH
 //valor para Bomba2 Activa
@@ -74,11 +69,6 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 //#define ALARM_BUZZER
 #define ALARM_LED
 #define ALARM_PIN 10
-
-//#define ALARM_AUX_ENBALED
-#ifdef ALARM_AUX_ENBALED
-#define ALARM_PIN_AUX 0
-#endif
 
 
 // ====================== FASES ======================
@@ -97,13 +87,12 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 //tension de entrada
 #define FASE_FROM_EEPROM_ENABLED // indica que se debe leer los valores almacenados en la EEPROM y no los valores constantes
-#ifndef FASE_FROM_EEPROM_ENABLED
+
 #define TENSION_ENTRADA 5 //220 Volts, pero para testear lo pongo en 5
 //valores de referencia para el valor de 220V
 #define FASE1_220_VALUE 1023
 #define FASE2_220_VALUE 1023
 #define FASE3_220_VALUE 1023
-#endif
 
 
 #define FASE_MIN_VOLTAGE 3 //Valor minimo antes de que se considere falla. 3 para testear
@@ -114,11 +103,11 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 // ====================== MODO ======================
 #define MANUAL 0
 #define AUTO 1
-#define CHANGE_MODE_BTN_PIN 13 //selector Manual / Automatico
 
-#ifndef DEBUG
+#define CHANGE_MODE_BTN_PIN A2 //selector Manual / Automatico
+#define IS_CHANGE_MODE_PULSADOR true //tipo de boton, pulsador o llave
+
 #define MODO_OUTPUT_VIEW_ENABLED //Muestra el modo en la pantalla
-#endif
 
 // ====================== BOMBAS ======================
 // --- PINES ---
@@ -280,8 +269,6 @@ typedef struct {
   unsigned long ErrorFaseCount;
   unsigned long LastTimeSaved;
 
-  //unsigned long Bomba1OnTime;
-  //unsigned long Bomba2OnTime;
   unsigned long FaseErrorBeginTime;
   boolean Changed;
 } Statistics;
@@ -314,6 +301,19 @@ typedef struct {
 } AutoFSM;
 
 
+//--- VIEW ---
+typedef struct {
+  boolean IsMainViewActive = true;
+  boolean IsErrorFaseViewActive = false;
+  boolean IsInfoViewActive = false;
+
+  unsigned long FaseViewLastRefreshTime = 0;
+
+  byte InfoViewNumberActive = 0;
+  unsigned long InfoViewNumberActiveTime = 0;
+} View;
+
+
 
 // ****************************************************************** //
 //                       VARIABLES DE SISTEMA
@@ -328,6 +328,8 @@ AutoFSM automaticFSM = { };
 Fase fase1 = { };
 Fase fase2 = { };
 Fase fase3 = { };
+View view = {};
+
 
 
 // ****************************************************************** //
@@ -341,10 +343,6 @@ void setup() {
 
   SetupPins();
   Serial.println(F("Pins - Ready"));
-
-  // put your setup code here, to run once:
-  SetupDisplay();
-  Serial.println(F("Display - Ready"));
 
   SetupLevelSensors();
   Serial.println(F("Level Sensors - Ready"));
@@ -362,7 +360,7 @@ void setup() {
   Serial.println(F("Mode - Ready"));
 
   SetupFase();
-  Serial.println(F("Fase Sensor - Ready"));
+  Serial.println(F("Fases Sensor - Ready"));
 
   SetupCommands();
   Serial.println(F("Commands - Ready"));
@@ -370,9 +368,15 @@ void setup() {
   SetupStatistics();
   Serial.println(F("Statistics - Ready"));
 
+  automaticFSM.IsFaseOk = true;
   automaticFSM.FromState = AUTO_IDLE;
   automaticFSM.State = AUTO_IDLE;
   automaticFSM.NextState = AUTO_NULL;
+  Serial.println(F("Main FSM  - Ready"));
+
+  // put your setup code here, to run once:
+  SetupDisplay();
+  Serial.println(F("Display - Ready"));
 
   Serial.println(F("Process - Ready"));
 }
@@ -383,12 +387,40 @@ void setup() {
 //************************************************//
 
 void loop() {
+  /*
+    boolean currState = digitalRead(A2);
 
+    if (currState)
+      Serial.println("Button pin 13 read: true");
+    else
+      Serial.println("Button pin 13 read: false");
+
+    currState = digitalRead(12);
+
+    if (currState)
+      Serial.println("Button pin 12 read: true");
+    else
+      Serial.println("Button pin 12 read: false");
+
+    currState = digitalRead(11);
+
+    if (currState)
+      Serial.println("Button pin 11 read: true");
+    else
+      Serial.println("Button pin 11 read: false");
+
+    delay(500);
+    return;
+  */
   ReadCommands();
+
+  //leo el modo de ejecución (MANUAL o AUTOMATICO)
+  ReadExecutionMode();
 
   //Veo el reset
   ReadResetAndClearStatisticsButton();
 
+  //Leo el boton Swap
   ReadSwapButton();
 
   //valido los niveles para visualizar en el display
@@ -407,16 +439,11 @@ void loop() {
   //Las bombas se detienen asi que el circuito seguiria normal.......pero no deberia arrancar
   ReadFases();
 
-  //leo el modo de ejecución (MANUAL o AUTOMATICO)
-  ReadExecutionMode();
-
   //ejecuta la alarma si corresponde
   ReadAlarm();
 
-  ReadPrintStatus();
-
   //actualizo la vista si corresponde
-  UpdateView();
+  RefreshViews();
 
 #ifdef DEBUG
   if (!IsContinueButtonPressed())
@@ -429,7 +456,6 @@ void loop() {
   CicladorLoop();
 
   SaveStatistics();
-
 }
 
 
@@ -442,26 +468,29 @@ void loop() {
 void SetupPins()
 {
   // --- DEBUG ---
-  //  pinMode(DEBUG_CONTINUE_PIN, INPUT_PULLUP);
-#ifdef GET_STATUS_BUTTON_ENABLED
-  pinMode(GET_STATUS_BTN_PIN, INPUT_PULLUP);
+#ifdef DEBUG
+  pinMode(DEBUG_CONTINUE_PIN, INPUT_PULLUP);
+  //digitalWrite(DEBUG_CONTINUE_PIN, HIGH);
 #endif
 
-
   // --- BUTTON ---
-  pinMode(BOMBA_SWAP_BTN_PIN, INPUT_PULLUP);
   pinMode(CHANGE_MODE_BTN_PIN, INPUT_PULLUP);
+  //digitalWrite(CHANGE_MODE_BTN_PIN, HIGH);
+
+  pinMode(BOMBA_SWAP_BTN_PIN, INPUT_PULLUP);
+  //digitalWrite(BOMBA_SWAP_BTN_PIN, HIGH);
+
   pinMode(RESET_BTN_PIN, INPUT_PULLUP);
+  //digitalWrite(RESET_BTN_PIN, HIGH);
+
   pinMode(VIEW_INFO_PIN, INPUT_PULLUP);
+  //digitalWrite(VIEW_INFO_PIN, HIGH);
 
   // --- INVERSOR ---
   pinMode(BOMBA_SWAP_RELE_PIN, OUTPUT);
 
   // --- ALARMA ---
   pinMode(ALARM_PIN, OUTPUT);
-#ifdef ALARM_AUX_ENBALED
-  pinMode(ALARM_PIN_AUX, OUTPUT);
-#endif
 
   // --- SENSOR FASE ---
 #ifdef FASE1_ENABLED
@@ -477,20 +506,28 @@ void SetupPins()
 
   // --- SENSORES BOMBAS ---
   pinMode(BOMBA1_ENABLE_PIN, INPUT_PULLUP);
+  //digitalWrite(BOMBA1_ENABLE_PIN, HIGH);
+
   pinMode(BOMBA2_ENABLE_PIN, INPUT_PULLUP);
+  //digitalWrite(BOMBA2_ENABLE_PIN, HIGH);
+
   pinMode(BOMBA1_CONTACTOR_RETORNO_PIN, INPUT_PULLUP);
+  //digitalWrite(BOMBA1_CONTACTOR_RETORNO_PIN, HIGH);
+
   pinMode(BOMBA2_CONTACTOR_RETORNO_PIN, INPUT_PULLUP);
+  //digitalWrite(BOMBA2_CONTACTOR_RETORNO_PIN, HIGH);
+
   pinMode(BOMBA1_TERMICO_RETORNO_PIN, INPUT_PULLUP);
+  //digitalWrite(BOMBA1_TERMICO_RETORNO_PIN, HIGH);
+
   pinMode(BOMBA2_TERMICO_RETORNO_PIN, INPUT_PULLUP);
+  //digitalWrite(BOMBA2_TERMICO_RETORNO_PIN, HIGH);
 
   // --- SENSOR DE NIVELES ---
   pinMode(CISTERNA_EMPTY_PIN, INPUT_PULLUP);
+  //digitalWrite(CISTERNA_EMPTY_PIN, HIGH);
   pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
-
-  //--- MODO ---
-#ifdef MODO_OUTPUT_ENABLED
-  pinMode(MODO_LED_PIN, OUTPUT);
-#endif
+  //digitalWrite(TANQUE_EMPTY_FULL_PIN, HIGH);
 }
 
 inline unsigned long deltaMillis(unsigned long currRead, unsigned long prevRead)

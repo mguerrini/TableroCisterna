@@ -1,50 +1,28 @@
 // ***** BOTONERA *****
-const long BTN_PRESSED_TIME = 30; //20 milisegundos de boton presionado, para evitar rebote
+//#define BTN_PRESSED_TIME 20 //20 milisegundos de boton presionado, para evitar rebote
 
 //funciones con referencias
 //boolean IsButtonPressed(int pin, boolean &state, boolean &isPressed, unsigned long &startTime);
+//boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed, unsigned long &startTime, unsigned long minTime, unsigned long maxTime);
 
-// --- BOTONERA ---
 
-bool IsBombaEnabledButtonPressed(byte number)
-{
-  if (number == BOMBA1)
-    return IsBomba1EnabledButtonPressed();
-  else
-    return IsBomba2EnabledButtonPressed();
-}
-
-boolean IsBomba1EnabledButtonPressed()
-{
-  static unsigned long startTime = 0;
-  static boolean state;
-  static boolean isPressed;
-
-  IsButtonPressed(BOMBA1_ENABLE_PIN, state, isPressed, startTime);
-
-  return isPressed;
-}
-
-boolean IsBomba2EnabledButtonPressed()
-{
-  static unsigned long startTime = 0;
-  static boolean state;
-  static boolean isPressed;
-
-  IsButtonPressed(BOMBA2_ENABLE_PIN, state, isPressed, startTime);
-
-  return isPressed;
-}
-
+// ****************************************************************** //
+//                              READ
+// ****************************************************************** //
 
 //Cada vez que se presiona el botón devuelve true y luego false. Una sola vez retorna TRUE, aunque siga presionado.
 //Mientras se mantenga presionado isPressed es va a ser TRUE
 boolean IsButtonPressed(int pin, boolean &state, boolean &isPressed, unsigned long &startTime)
 {
+  //Serial.println(F("IsButtonPressed - Start"));
   unsigned long currMillis = millis();
+
   //cambia el estado, registro el inicio del cambio
-  if (digitalRead(pin) != state)
+  boolean currState = digitalRead(pin);
+
+  if (currState != state)
   {
+    //Serial.println(F("IsButtonPressed - changed state"));
     state = !state;
     startTime = currMillis;
     isPressed = false; //porque recien se inicio el timer y tiene que pasar el limite
@@ -102,25 +80,25 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
     if (state == HIGH && changeState) //no esta presionado
     {
-/*      
-      Serial.print("        - Min: ");
-      Serial.print(minTime);
-      Serial.print(" - Delta: ");
-      Serial.print(delta1);
-      Serial.print(" - Max: ");
-      Serial.println(maxTime);
-*/
+      /*
+            Serial.print("        - Min: ");
+            Serial.print(minTime);
+            Serial.print(" - Delta: ");
+            Serial.print(delta1);
+            Serial.print(" - Max: ");
+            Serial.println(maxTime);
+      */
       //valido que el tiempo de presion este en el rango
       if (minTime <= delta1 && delta1 <= maxTime )
       {
-/*
-        Serial.print("Pressed - Min: ");
-        Serial.print(minTime);
-        Serial.print(" - Delta: ");
-        Serial.print(delta1);
-        Serial.print(" - Max: ");
-        Serial.println(maxTime);
-*/
+        /*
+                Serial.print("Pressed - Min: ");
+                Serial.print(minTime);
+                Serial.print(" - Delta: ");
+                Serial.print(delta1);
+                Serial.print(" - Max: ");
+                Serial.println(maxTime);
+        */
         return true;
       }
       else
@@ -140,23 +118,23 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
     minTime = minTime + BTN_PRESSED_TIME;
     boolean output = (delta2 > minTime);
-/*
-    Serial.print("        - Min: ");
-    Serial.print(minTime);
-    Serial.print(" - Delta: ");
-    Serial.println(delta2);
-*/
+    /*
+        Serial.print("        - Min: ");
+        Serial.print(minTime);
+        Serial.print(" - Delta: ");
+        Serial.println(delta2);
+    */
     //paso BTN_PRESSED_TIME presionado -> lo considero presionado
     if (output)
     {
       //registro el boton presionado
       isPressed = true;
-/*
-      Serial.print("Pressed - Min: ");
-      Serial.print(minTime);
-      Serial.print(" - Delta: ");
-      Serial.println(delta2);
-*/
+      /*
+            Serial.print("Pressed - Min: ");
+            Serial.print(minTime);
+            Serial.print(" - Delta: ");
+            Serial.println(delta2);
+      */
     }
 
     //output determina que se presiono y se resetea.....vuelve a no presionado, sin importar que siga apretado

@@ -1,5 +1,8 @@
 
-//--- Setup ---
+// ****************************************************************** //
+//                          SETUP
+// ****************************************************************** //
+
 void SetupBombaSensors()
 {
   //no hago nada..en principio
@@ -9,41 +12,39 @@ void SetupBombas()
 {
   //Read el estado enabled/disabled from EEPROM
   bomba1.Number = BOMBA1;
-  bomba1.IsEnabled = true;
-  bomba1.State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
   bomba1.IsActive = false;
-  bomba1.Uses = 0;
-  bomba1.MachineState = FSM_BOMBA_OFF;
-  bomba1.FromMachineState = FSM_BOMBA_OFF;
-  bomba1.IsTermicoOk = false;
-  bomba2.IsContactorClosed = false;
+  ResetBomba(&bomba1);
 
   bomba2.Number = BOMBA2;
-  bomba2.IsEnabled = true;
-  bomba2.State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
   bomba2.IsActive = false;
-  bomba2.Uses = 0;
-  bomba2.MachineState = FSM_BOMBA_OFF;
-  bomba2.FromMachineState = FSM_BOMBA_OFF;
-  bomba2.IsTermicoOk = false;
-  bomba2.IsContactorClosed = false;
+  ResetBomba(&bomba2);
 
   //leo el tiempo promedio de llenado
+  //TODO LEER EL TIEMPO DE LLENADO
 
+  //Inicializo los sensores 
+  IsBomba1ContactorClosed();
+  IsBomba2ContactorClosed();
+  IsBomba1EnabledButtonPressed();
+  IsBomba2EnabledButtonPressed();
+  IsBomba1TermicoOk();
+  IsBomba2TermicoOk();
 
+  //espero el tiempo de estabilizacion para volver a leerlos
+  delay(BTN_PRESSED_TIME + BTN_PRESSED_TIME);
+  
   //activo la bomba 1
-  ActivateBomba(&bomba1);
+  ActivateBomba(&bomba1, false);
 
   ReadBombaSensors();
 
   ReadEnabledBombas();
-
-  UpdateBomba1Display();
-  UpdateBomba2Display();
 }
 
 
-//--- Control ---
+// ****************************************************************** //
+//                              READ
+// ****************************************************************** //
 
 void ReadBombaSensors()
 {
@@ -71,6 +72,14 @@ void ReadBombaSensors(Bomba* bomba)
 
   termicoChanged = termicoOk != bomba->IsTermicoOk;
   contactorChanged = contactorClosed != bomba->IsContactorClosed;
+  
+  if (termicoChanged)
+  {
+    Serial.print(F("Termico changed - "));
+    Serial.print(bomba->IsTermicoOk);
+    Serial.print(F(" -> "));
+    Serial.println(termicoOk);
+  }
 
   bomba->IsContactorClosed = contactorClosed;
   bomba->IsTermicoOk = termicoOk;
@@ -171,6 +180,104 @@ void ReadEnabledBombas()
   }
 }
 
+// ****************************************************************** //
+//                          METODOS
+// ****************************************************************** //
+
+//reseteo todos los valores...en la siguiente vuelta se va a poner todo normal
+void ResetBomba(Bomba* bomba)
+{
+
+  bomba->IsEnabled = true;
+  bomba->State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
+  bomba->Uses = 0;
+  bomba->MachineState = FSM_BOMBA_OFF;
+  bomba->FromMachineState = FSM_BOMBA_OFF;
+  bomba->IsTermicoOk = true;
+  bomba->IsContactorClosed = false;
+}
+
+void ActivateBomba(Bomba* bomba, boolean updateView)
+{
+  if (bomba->IsActive)
+  {
+    return;
+  }
+
+  if (bomba->Number == BOMBA1)
+  {
+    bomba2.IsActive = false;
+    bomba1.IsActive = true;
+    bomba1.Uses = 0;
+
+    digitalWrite(BOMBA_SWAP_RELE_PIN, BOMBA1_ACTIVE);
+  }
+  else
+  {
+    bomba1.IsActive = false;
+    bomba2.IsActive = true;
+    bomba2.Uses = 0;
+
+    digitalWrite(BOMBA_SWAP_RELE_PIN, BOMBA2_ACTIVE);
+  }
+
+  if (updateView)
+    UpdateActiveBombaDisplay();
+}
+
+
+Bomba* SwapAndActiveBomba()
+{
+  bool isAvailable1 = IsBombaAvailable(&bomba1);
+  bool isAvailable2 = IsBombaAvailable(&bomba2);
+
+  if (isAvailable1 && isAvailable2)
+  {
+    if (bomba1.IsActive)
+    {
+      ActivateBomba(&bomba2, true);
+      return &bomba2;
+    }
+    else
+    {
+      ActivateBomba(&bomba1, true);
+      return &bomba1;
+    }
+  }
+
+  if (IsBombaAvailable(&bomba1))
+  {
+    ActivateBomba(&bomba1, true);
+    return &bomba1;
+  }
+
+  if (IsBombaAvailable(&bomba2))
+  {
+    ActivateBomba(&bomba2, true);
+    return &bomba2;
+  }
+
+  return NULL;
+}
+
+
+void CleanFillTimes()
+{
+  for (int i = 0; i < 10; i++)
+  {
+    bomba1.FillTimeMinutes[i] = 0;
+    bomba2.FillTimeMinutes[i] = 0;
+
+    bomba1.FillTimeMinutesAverage = 0;
+    bomba1.FillTimeMinutesAverage = 0;
+  }
+}
+
+
+// ****************************************************************** //
+//                        PROPIEDADES
+// ****************************************************************** //
+
 byte GetActiveBombaNumber()
 {
   if (bomba1.IsActive)
@@ -225,67 +332,6 @@ byte GetBombaState(Bomba* bomba)
   return bomba->State;
 }
 
-void ActivateBomba(Bomba* bomba)
-{
-  if (bomba->IsActive)
-  {
-    return;
-  }
-
-  if (bomba->Number == BOMBA1)
-  {
-    bomba2.IsActive = false;
-    bomba1.IsActive = true;
-    bomba1.Uses = 0;
-
-    digitalWrite(BOMBA_SWAP_RELE_PIN, BOMBA1_ACTIVE);
-  }
-  else
-  {
-    bomba1.IsActive = false;
-    bomba2.IsActive = true;
-    bomba2.Uses = 0;
-
-    digitalWrite(BOMBA_SWAP_RELE_PIN, BOMBA2_ACTIVE);
-  }
-
-  UpdateActiveBombaDisplay();
-}
-
-
-Bomba* SwapAndActiveBomba()
-{
-  bool isAvailable1 = IsBombaAvailable(&bomba1);
-  bool isAvailable2 = IsBombaAvailable(&bomba2);
-
-  if (isAvailable1 && isAvailable2)
-  {
-    if (bomba1.IsActive)
-    {
-      ActivateBomba(&bomba2);
-      return &bomba2;
-    }
-    else
-    {
-      ActivateBomba(&bomba1);
-      return &bomba1;
-    }
-  }
-
-  if (IsBombaAvailable(&bomba1))
-  {
-    ActivateBomba(&bomba1);
-    return &bomba1;
-  }
-
-  if (IsBombaAvailable(&bomba2))
-  {
-    ActivateBomba(&bomba2);
-    return &bomba2;
-  }
-
-  return NULL;
-}
 
 //Devuelve el tiempo de encendido de la bomba en minutos
 unsigned long GetBombaWorkingTime(Bomba* bomba)
@@ -312,23 +358,15 @@ unsigned long GetBombaWorkingTimeMaximum(Bomba* bomba)
     return TANQUE_TIME_TO_FULL;
 }
 
-void CleanFillTimes()
-{
-  for (int i = 0; i < 10; i++)
-  {
-    bomba1.FillTimeMinutes[i] = 0;
-    bomba2.FillTimeMinutes[i] = 0;
 
-    bomba1.FillTimeMinutesAverage = 0;
-    bomba1.FillTimeMinutesAverage = 0;
-  }
-}
-
+// ****************************************************************** //
+//                        SENSORES
+// ****************************************************************** //
 
 bool IsBombaSwapButtonPressed()
 {
-  static unsigned long startTime = 0;
-  static boolean state;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(BOMBA_SWAP_BTN_PIN);
   static boolean isPressed;
 
   return IsButtonPressed(BOMBA_SWAP_BTN_PIN, state, isPressed, startTime);
@@ -337,8 +375,8 @@ bool IsBombaSwapButtonPressed()
 
 boolean IsBomba1ContactorClosed()
 {
-  static unsigned long startTime = 0;
-  static boolean state;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(BOMBA1_CONTACTOR_RETORNO_PIN);
   static boolean isPressed;
 
   IsButtonPressed(BOMBA1_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
@@ -348,8 +386,8 @@ boolean IsBomba1ContactorClosed()
 
 boolean IsBomba2ContactorClosed()
 {
-  static unsigned long startTime = 0;
-  static boolean state;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(BOMBA2_CONTACTOR_RETORNO_PIN);
   static boolean isPressed;
 
   IsButtonPressed(BOMBA2_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
@@ -360,8 +398,8 @@ boolean IsBomba2ContactorClosed()
 
 boolean IsBomba1TermicoOk()
 {
-  static unsigned long startTime = 0;
-  static boolean state;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(BOMBA1_TERMICO_RETORNO_PIN);
   static boolean isPressed;
 
   IsButtonPressed(BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
@@ -371,11 +409,33 @@ boolean IsBomba1TermicoOk()
 
 boolean IsBomba2TermicoOk()
 {
-  static unsigned long startTime = 0;
-  static boolean state;
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(BOMBA2_TERMICO_RETORNO_PIN);
   static boolean isPressed;
 
   IsButtonPressed(BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+
+  return isPressed;
+}
+
+boolean IsBomba1EnabledButtonPressed()
+{
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(BOMBA1_ENABLE_PIN);
+  static boolean isPressed;
+
+  IsButtonPressed(BOMBA1_ENABLE_PIN, state, isPressed, startTime);
+
+  return isPressed;
+}
+
+boolean IsBomba2EnabledButtonPressed()
+{
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(BOMBA2_ENABLE_PIN);
+  static boolean isPressed;
+
+  IsButtonPressed(BOMBA2_ENABLE_PIN, state, isPressed, startTime);
 
   return isPressed;
 }

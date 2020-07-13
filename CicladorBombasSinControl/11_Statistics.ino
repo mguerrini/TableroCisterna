@@ -2,7 +2,7 @@
 
 void SetupStatistics()
 {
-  CleanStatistics();
+  CleanStatistics(false);
   ReadStatistics();
   statistics.LastTimeSaved = millis();
 }
@@ -57,7 +57,6 @@ void Statistics_BombaOff(Bomba* bomba, boolean registerFillTime)
         Stadistics_AddFillTime(bomba, minutes1);
 
       statistics.Bomba1TotalMinutes = statistics.Bomba1TotalMinutes + minutes1; //minutos
-      //statistics.Bomba1OnTime = 0;
       statistics.Changed = true;
     }
   }
@@ -71,7 +70,6 @@ void Statistics_BombaOff(Bomba* bomba, boolean registerFillTime)
         Stadistics_AddFillTime(bomba, minutes2);
 
       statistics.Bomba2TotalMinutes = statistics.Bomba2TotalMinutes + minutes2; //minutos
-      //statistics.Bomba2OnTime = 0;
       statistics.Changed = true;
     }
   }
@@ -101,12 +99,10 @@ void Statistics_BombaErrorTermico(Bomba* bomba)
 {
   if (bomba->Number == BOMBA1)
   {
-    //statistics.Bomba1OnTime = 0;
     statistics.Bomba1ErrorTermicoCount = statistics.Bomba1ErrorTermicoCount + 1;
   }
   else
   {
-    //statistics.Bomba2OnTime = 0;
     statistics.Bomba2ErrorTermicoCount = statistics.Bomba2ErrorTermicoCount + 1;
   }
 
@@ -134,7 +130,7 @@ void Statistics_FaseError_End()
   statistics.Changed = true;
 }
 
-void CleanStatistics()
+void CleanStatistics(boolean save)
 {
   statistics.Bomba1Uses = 0;
   statistics.Bomba2Uses = 0;
@@ -148,14 +144,13 @@ void CleanStatistics()
 
   statistics.Changed = false;
 
-  //statistics.Bomba1OnTime = 0;
-  //statistics.Bomba2OnTime = 0;
   statistics.FaseErrorBeginTime = 0;
 
   statistics.LastTimeSaved = millis();
 
   //guardo las estadisticas reiniciadas
-  DoSaveStatistics();
+  if (save)
+    DoSaveStatistics();
 }
 
 void DoSaveStatistics()
