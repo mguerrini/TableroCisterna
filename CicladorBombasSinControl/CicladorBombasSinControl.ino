@@ -166,32 +166,29 @@ const unsigned long STATISTICS_TIME_TO_SAVE = (24 / 3) * (60 * 60 * 1000); //3 v
 
 
 // ====================== FSM BOMBA ESTADOS ======================
-#define FSM_BOMBA_OFF 1
-#define FSM_BOMBA_TURNING_ON 2
-#define FSM_BOMBA_ON 3
-#define FSM_BOMBA_TURNING_OFF 4
-#define FSM_BOMBA_ERROR_CONTACTOR_CERRADO 5
-#define FSM_BOMBA_ERROR_CONTACTOR_ABIERTO 6
-#define FSM_BOMBA_ERROR_TERMICO 7
-#define FSM_BOMBA_DISABLING 8
-#define FSM_BOMBA_DISABLED 9
-#define FSM_BOMBA_ENABLING 10
-#define FSM_BOMBA_NULL 0
+#define FSM_BOMBA_NULL 100
+#define FSM_BOMBA_OFF 101
+#define FSM_BOMBA_TURNING_ON 102
+#define FSM_BOMBA_ON 103
+#define FSM_BOMBA_TURNING_OFF 104
+#define FSM_BOMBA_ERROR_CONTACTOR_CERRADO 105
+#define FSM_BOMBA_ERROR_CONTACTOR_ABIERTO 106
+#define FSM_BOMBA_ERROR_TERMICO 107
+#define FSM_BOMBA_DISABLING 108
+#define FSM_BOMBA_DISABLED 109
+#define FSM_BOMBA_ENABLING 110
 
 // ====================== FSM AUTO ESTADOS ======================
-#define AUTO_IDLE 1
-#define AUTO_SELECTING_BOMBA 2
-#define AUTO_NOT_AVAILABLES_BOMBAS 3
-#define AUTO_STARTING 4
-#define AUTO_WORKING 5
-#define AUTO_STOPPING 6
-#define AUTO_TANQUE_FULL 7
-#define AUTO_STOPPING_BOMBA 8
-#define AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE 9
-#define AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT 10
-#define AUTO_CHANGE_BOMBA 11
-#define AUTO_ERROR_BOMBA_WORKING 12
-#define AUTO_NULL 0
+#define AUTO_NULL 200
+#define AUTO_IDLE 201
+#define AUTO_NOT_AVAILABLES_BOMBAS 203
+#define AUTO_STARTING 204
+#define AUTO_WORKING 205
+#define AUTO_STOPPING 206
+#define AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE 209
+#define AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT 210
+#define AUTO_CHANGE_BOMBA 211
+#define AUTO_ERROR_BOMBA_WORKING 212
 
 
 // ****************************************************************** //
@@ -213,6 +210,7 @@ typedef struct  {
   bool RequestDisabled;
   bool IsContactorClosed;
   bool IsTermicoOk;
+
   byte FromMachineState;
   byte MachineState;
   byte NextMachineState;
@@ -379,6 +377,7 @@ void setup() {
   Serial.println(F("Display - Ready"));
 
   Serial.println(F("Process - Ready"));
+
 }
 
 
@@ -387,31 +386,6 @@ void setup() {
 //************************************************//
 
 void loop() {
-  /*
-    boolean currState = digitalRead(A2);
-
-    if (currState)
-      Serial.println("Button pin 13 read: true");
-    else
-      Serial.println("Button pin 13 read: false");
-
-    currState = digitalRead(12);
-
-    if (currState)
-      Serial.println("Button pin 12 read: true");
-    else
-      Serial.println("Button pin 12 read: false");
-
-    currState = digitalRead(11);
-
-    if (currState)
-      Serial.println("Button pin 11 read: true");
-    else
-      Serial.println("Button pin 11 read: false");
-
-    delay(500);
-    return;
-  */
   ReadCommands();
 
   //leo el modo de ejecución (MANUAL o AUTOMATICO)
@@ -462,7 +436,6 @@ void loop() {
 //************************************************//
 //                 AUXILIARES
 //************************************************//
-
 // --- PINS ---
 
 void SetupPins()

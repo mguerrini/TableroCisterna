@@ -196,11 +196,11 @@ void DoSaveStatistics()
   //tiempo de llenado
   EEPROM.get(BOMBA1_FILLING_TIME_MINUTES_ADDR, iAux);
   if (iAux != bomba1.FillTimeMinutesAverage)
-    EEPROM.put(BOMBA1_FILLING_TIME_MINUTES_ADDR, bomba1.Bomba1ErrorTermicoCount);
+    EEPROM.put(BOMBA1_FILLING_TIME_MINUTES_ADDR, bomba1.FillTimeMinutesAverage);
 
   EEPROM.get(BOMBA2_FILLING_TIME_MINUTES_ADDR, iAux);
   if (iAux != bomba2.FillTimeMinutesAverage)
-    EEPROM.put(BOMBA2_FILLING_TIME_MINUTES_ADDR, bomba2.Bomba2ErrorTermicoCount);
+    EEPROM.put(BOMBA2_FILLING_TIME_MINUTES_ADDR, bomba2.FillTimeMinutesAverage);
 
 
 
@@ -268,10 +268,10 @@ void ReadStatistics()
 #endif
 }
 
-void printStatistics()
+void PrintStatistics()
 {
-  Serial.println(F("Valores Estadisticos"));
-  Serial.println(F("BOMBA 1"));
+  Serial.println(F("*** Valores Estadisticos ***"));
+  Serial.println(F("*** BOMBA 1 ***"));
 
   Serial.print(F("Cantidad de Usos: "));
   Serial.println(statistics.Bomba1Uses);
@@ -286,7 +286,7 @@ void printStatistics()
   Serial.println(bomba1.FillTimeMinutesAverage);
 
   Serial.println();
-  Serial.println(F("BOMBA 2"));
+  Serial.println(F("*** BOMBA 2 ***"));
 
   Serial.print(F("Cantidad de Usos: "));
   Serial.println(statistics.Bomba2Uses);
@@ -301,7 +301,7 @@ void printStatistics()
   Serial.println(bomba2.FillTimeMinutesAverage);
 
   Serial.println();
-  Serial.println(F("ERRORES DE FASE"));
+  Serial.println(F("*** ERRORES DE FASE ***"));
 
   Serial.print(F("Cantidad de errores de fase: "));
   Serial.println(statistics.ErrorFaseCount);

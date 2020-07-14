@@ -47,7 +47,7 @@ void ReadCommands()
     }
     else if (cmd == "PRINT_STATISTICS")
     {
-      printStatistics();
+      PrintStatistics();
     }
     else
     {
@@ -58,11 +58,9 @@ void ReadCommands()
 
 
 
-
 // *************************************************** //
 //                    SWAP BUTTON
 // *************************************************** //
-
 
 void ReadSwapButton()
 {
@@ -82,31 +80,8 @@ void ReadSwapButton()
 //                    RESET
 // *************************************************** //
 
-
 void ReadResetAndClearStatisticsButton()
 {
-  /*
-    boolean resetBtn = IsResetButtonPressed();
-    boolean clearBtn = IsCleanStatisticsButtonPressed();
-
-    if (resetBtn || clearBtn)
-    {
-    Serial.print(F("Reset: "));
-    if (resetBtn)
-      Serial.print(F("TRUE "));
-    else
-      Serial.print(F("FALSE"));
-
-    Serial.print(F(" - Clear: "));
-
-    if (clearBtn)
-      Serial.println(F("TRUE"));
-    else
-      Serial.println(F("FALSE"));
-    }
-
-    return;
-  */
   if (IsResetButtonPressed())
   {
     Serial.println(F("RESET"));
@@ -199,29 +174,22 @@ void DoPrintStatus()
 
   //Niveles
   Serial.println(F("*** Niveles ***"));
-  if (sensores.IsCisternaSensorMinVal)
-    Serial.println(F("Cisterna Nivel Minimo: true"));
-  else
-    Serial.println(F("Cisterna Nivel Minimo: false"));
+  Serial.print(F("Cisterna Nivel Minimo: "));
+  PrintTrueOrFalse (sensores.IsCisternaSensorMinVal);
 
   Serial.print(F("Cisterna Empty Start Time: "));
   Serial.println(sensores.CisternaEmptyStartTime);
+
   Serial.print(F("Cisterna Empty Time (milisegundos): "));
   Serial.println(sensores.CisternaEmptyMillis);
 
-  if (sensores.IsTanqueSensorMinVal)
-    Serial.println(F("Tanque Nivel Minimo: true"));
-  else
-    Serial.println(F("Tanque Nivel Minimo: false"));
+  Serial.print(F("Tanque Nivel Minimo: "));
+  PrintTrueOrFalse (sensores.IsTanqueSensorMinVal);
 
-  if (sensores.IsTanqueSensorMaxVal)
-    Serial.println(F("Tanque Nivel Maximo: true"));
-  else
-    Serial.println(F("Tanque Nivel Maximo: false"));
+  Serial.print(F("Tanque Nivel Maximo: "));
+  PrintTrueOrFalse (sensores.IsTanqueSensorMaxVal);
 
   Serial.println();
-
-  PrintAlarm();
 
   //Bombas
   Serial.println(F("*** BOMBA 1 ***"));
@@ -234,25 +202,23 @@ void DoPrintStatus()
 
   //Vista
   PrintView();
+  Serial.println();
 
+  PrintAlarm();
+  Serial.println();
 }
 
 void PrintView()
 {
   Serial.println(F("*** VIEW ****"));
-  if (view.IsMainViewActive)
-    Serial.println(F("Main View Active: True"));
-  else
-    Serial.println(F("Main View Active: False"));
-  if (view.IsErrorFaseViewActive)
-    Serial.println(F("Fase View Active: True"));
-  else
-    Serial.println(F("Fase View Active: False"));
+  Serial.print(F("Main View Active: "));
+  PrintTrueOrFalse (view.IsMainViewActive);
 
-  if (view.IsInfoViewActive)
-    Serial.println(F("Info View Active: True"));
-  else
-    Serial.println(F("Info View Active: False"));
+  Serial.print(F("Fase View Active: "));
+  PrintTrueOrFalse (view.IsErrorFaseViewActive);
+
+  Serial.print(F("Info View Active: "));
+  PrintTrueOrFalse(view.IsInfoViewActive);
 
   Serial.print(F("Info View Active View Number: "));
   Serial.println(view.InfoViewNumberActive);
@@ -261,46 +227,31 @@ void PrintView()
 void PrintAlarm()
 {
   Serial.println(F("*** Alarmas ***"));
-  if (alarm.IsManualAlarmON)
-    Serial.println(F("Manual: ON"));
-  else
-    Serial.println(F("Manual: OFF"));
+  Serial.print(F("Manual: "));
+  PrintOnOrOff (alarm.IsManualAlarmON);
 
+  Serial.print(F("Bombas no disponibles: "));
+  PrintOnOrOff (alarm.IsNotAvailableBombasAlarmON);
 
-  if (alarm.IsNotAvailableBombasAlarmON)
-    Serial.println(F("Bombas no disponibles: ON"));
-  else
-    Serial.println(F("Bombas no disponibles: OFF"));
+  Serial.print(F("Bomba 1: "));
+  PrintOnOrOff (alarm.IsBomba1AlarmON);
 
-  if (alarm.IsBomba1AlarmON)
-    Serial.println(F("Bomba 1: ON"));
-  else
-    Serial.println(F("Bomba 1: OFF"));
+  Serial.print(F("Bomba 2: "));
+  PrintOnOrOff (alarm.IsBomba2AlarmON);
 
-  if (alarm.IsBomba2AlarmON)
-    Serial.println(F("Bomba 2: ON"));
-  else
-    Serial.println(F("Bomba 2: OFF"));
-
-  if (alarm.IsCisternaAlarmON)
-    Serial.println(F("Cisterna: ON"));
-  else
-    Serial.println(F("Cisterna: OFF"));
+  Serial.print(F("Cisterna: "));
+  PrintOnOrOff (alarm.IsCisternaAlarmON);
 
   Serial.println();
 }
 
 void PrintBomba(Bomba* bomba)
 {
-  if (bomba->IsEnabled)
-    Serial.println(F("IsEnabled: true"));
-  else
-    Serial.println(F("IsEnabled: false"));
+  Serial.print(F("IsEnabled: "));
+  PrintTrueOrFalse (bomba->IsEnabled);
 
-  if (bomba->IsActive)
-    Serial.println(F("IsActive: true"));
-  else
-    Serial.println(F("IsActive: false"));
+  Serial.print(F("IsActive: "));
+  PrintTrueOrFalse (bomba->IsActive);
 
   Serial.print(F("State: "));
   PrintStateBomba(bomba, true);
@@ -309,11 +260,14 @@ void PrintBomba(Bomba* bomba)
   PrintStateBombaFSM(bomba->MachineState);
   Serial.println();
 
+  Serial.print(F("Start Time: "));
+  Serial.println(bomba->StartTime);
+
+  Serial.print(F("Refresh Time: "));
+  Serial.println(bomba->RefreshTime);
+
   Serial.print(F("Uses: "));
   Serial.println(bomba->Uses);
-
-  //  Serial.print(F("Timer: "));
-  //  Serial.println(bomba->Timer);
 
   Serial.print(F("Contactor Error Counter: "));
   Serial.println(bomba->ContactorErrorCounter);
@@ -329,35 +283,26 @@ void PrintBomba(Bomba* bomba)
   }
   Serial.println(bomba->FillTimeMinutes[9]);
 
-  if (bomba->IsContactorClosed)
-    Serial.println(F("IsContactorClosed: true"));
-  else
-    Serial.println(F("IsContactorClosed: false"));
+  Serial.print(F("IsContactorClosed: "));
+  PrintTrueOrFalse (bomba->IsContactorClosed);
 
-  if (bomba->IsTermicoOk)
-    Serial.println(F("IsTermicoOk: true"));
-  else
-    Serial.println(F("IsTermicoOk: false"));
+  Serial.print(F("IsTermicoOk: "));
+  PrintTrueOrFalse (bomba->IsTermicoOk);
 
-  if (bomba->RequestOn)
-    Serial.println(F("RequestOn: true"));
-  else
-    Serial.println(F("RequestOn: false"));
+  Serial.print(F("RequestOn: "));
+  PrintTrueOrFalse (bomba->RequestOn);
 
-  if (bomba->RequestOff)
-    Serial.println(F("RequestOff: true"));
-  else
-    Serial.println(F("RequestOff: false"));
+  Serial.print(F("RequestOff: "));
+  PrintTrueOrFalse(bomba->RequestOff);
 
-  if (bomba->RequestEnabled)
-    Serial.println(F("RequestEnabled: true"));
-  else
-    Serial.println(F("RequestEnabled: false"));
+  Serial.print(F("RequestEnabled: "));
+  PrintTrueOrFalse (bomba->RequestEnabled);
 
-  if (bomba->RequestDisabled)
-    Serial.println(F("RequestDisabled: true"));
-  else
-    Serial.println(F("RequestDisabled: false"));
+  Serial.print(F("RequestDisabled: "));
+  PrintTrueOrFalse(bomba->RequestDisabled);
+
+  Serial.print(F("Timer: "));
+  Serial.println(bomba->Timer);
 
 }
 
@@ -400,6 +345,25 @@ long mapLocal(float value, float in_min, float in_max, float out_min, float out_
   */
   return output;
 }
+
+
+void PrintTrueOrFalse(boolean input)
+{
+  if (input)
+    Serial.println(F("True"));
+  else
+    Serial.println(F("False"));
+}
+
+
+void PrintOnOrOff(boolean input)
+{
+  if (input)
+    Serial.println(F("ON"));
+  else
+    Serial.println(F("OFF"));
+}
+
 
 // *************************************************** //
 //                    READ EEPROM

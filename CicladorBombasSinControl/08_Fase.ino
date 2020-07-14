@@ -163,8 +163,6 @@ boolean ReadFase3(unsigned long t)
 #ifdef FASE3_ENABLED
   int fase3Val = analogRead(FASE3_INPUT_PIN);
   int volts = mapLocal(fase3Val, 0, fase3.ConversionFactor, 0, fase3.InputVoltsReference);
-  //Serial.print("Fase 3: ");
-  //Serial.println(volts);
 
   //agrego el nuevo valor
   updateFaseValues(&fase3, t, volts);

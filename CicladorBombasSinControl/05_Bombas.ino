@@ -13,14 +13,15 @@ void SetupBombas()
   //Read el estado enabled/disabled from EEPROM
   bomba1.Number = BOMBA1;
   bomba1.IsActive = false;
+  bomba1.FillTimeMinutesAverage = 0;
   ResetBomba(&bomba1);
 
   bomba2.Number = BOMBA2;
   bomba2.IsActive = false;
+  bomba2.FillTimeMinutesAverage = 0;
   ResetBomba(&bomba2);
 
-  //leo el tiempo promedio de llenado
-  //TODO LEER EL TIEMPO DE LLENADO
+  //el tiempo promedio de llenado se carga cuando se cargan las estadisticas en el SetupStatistics
 
   //Inicializo los sensores 
   IsBomba1ContactorClosed();
@@ -187,7 +188,6 @@ void ReadEnabledBombas()
 //reseteo todos los valores...en la siguiente vuelta se va a poner todo normal
 void ResetBomba(Bomba* bomba)
 {
-
   bomba->IsEnabled = true;
   bomba->State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
   bomba->Uses = 0;
