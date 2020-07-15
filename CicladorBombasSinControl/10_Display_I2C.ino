@@ -34,19 +34,32 @@ void RefreshViews()
   if (view.IsMainViewActive)
     return;
 
+  unsigned long delta = 0;
+
   if (view.IsInfoViewActive)
   {
-    unsigned long delta1 = deltaMillis(millis(), view.InfoViewNumberActiveTime);
+      delta = deltaMillis(millis(), view.FaseViewLastRefreshTime);
 
+    //la vista de las fases
+    if (view.InfoViewNumberActive == 0)
+    {
+      if (delta > FASE_REFRESH_TIME)
+      {
+        RefreshFaseView();
+        view.FaseViewLastRefreshTime = millis();
+      }
+    }
+
+    delta = deltaMillis(millis(), view.InfoViewNumberActiveTime); 
     //uso el mismo delta para refrescar la ventane de error
-    if (delta1 > INFO_VIEW_VISIBLE_TIME)
+    if (delta > INFO_VIEW_VISIBLE_TIME)
       ShowMainView();
   }
 
   if (view.IsErrorFaseViewActive)
   {
-    unsigned long delta2 = deltaMillis(millis(), view.FaseViewLastRefreshTime);
-    if (delta2 > FASE_REFRESH_TIME)
+    delta = deltaMillis(millis(), view.FaseViewLastRefreshTime);
+    if (delta > FASE_REFRESH_TIME)
     {
       RefreshFaseView();
       view.FaseViewLastRefreshTime = millis();
@@ -82,6 +95,7 @@ void ShowInfoView()
     view.IsInfoViewActive = true;
 
     view.InfoViewNumberActive = 0;
+    view.FaseViewLastRefreshTime = millis();
   }
   else
   {
@@ -164,7 +178,6 @@ void ShowDatosFase()
     lcd.setCursor(15, 3);
     lcd.print(F("ERROR"));
   }
-
 }
 
 
@@ -179,50 +192,50 @@ void ShowNextInfoView()
       lcd.setCursor(0, 0);
       lcd.print(F(" Tension de Entrada "));
       ShowDatosFase();
-      break;
+      return;
 
     case 1:
       //Estadisticas Bomba 1
       PrintBombaView1(&bomba1);
-      break;
+      return;
 
     case 2:
       PrintBombaView2(&bomba1);
-      break;
+      return;
 
     case 3:
-      //Estadisticas Bomba 1
+      //Estadisticas Bomba 2
       PrintBombaView1(&bomba2);
-      break;
+      return;
 
     case 4:
       PrintBombaView2(&bomba2);
-      break;
+      return;
 
     case 5:
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(F("**** Generales *****"));
       lcd.setCursor(0, 1);
-      lcd.print(F("Bomba seleccionada:"));
-      lcd.setCursor(0, 1);
+      lcd.print(F("Bomba seleccionada: "));
+      lcd.setCursor(19, 1);
       lcd.print(GetActiveBombaNumber());
 
       lcd.setCursor(0, 2);
-      lcd.print(F("Ciclos seguidos:"));
-      lcd.setCursor(16, 2);
+      lcd.print(F("Ciclos seguidos:    "));
+      lcd.setCursor(17, 2);
       lcd.print(GetActiveBombaUses());
       return;
 
     case 6:
       lcd.setCursor(0, 1);
       lcd.print(F("Errores Fase:       "));
-      lcd.setCursor(13, 1);
+      lcd.setCursor(14, 1);
       lcd.print(statistics.ErrorFaseCount);
 
       lcd.setCursor(0, 2);
       lcd.print(F("Min. sin fase:      "));
-      lcd.setCursor(14, 2);
+      lcd.setCursor(15, 2);
       lcd.print(statistics.ErrorFaseTotalMinutes);
       return;
   }
@@ -240,6 +253,8 @@ void PrintBombaView1(Bomba* bomba)
   lcd.print(F("***** Bomba "));
   lcd.print(number);
   lcd.print(F(" ******"));
+
+  lcd.setCursor(0, 1);
   lcd.print(F("Usos:               "));
   lcd.setCursor(6, 1);
 
@@ -256,47 +271,47 @@ void PrintBombaView1(Bomba* bomba)
   else
     lcd.print(statistics.Bomba2TotalMinutes);
 
-  lcd.setCursor(0, 2);
-  lcd.print(F("T. llenado min.:     "));
-  lcd.setCursor(11, 2);
+  lcd.setCursor(0, 3);
+  lcd.print(F("Llenado min:        "));
+  lcd.setCursor(13, 3);
   lcd.print(bomba->FillTimeMinutesAverage);
 }
 
 void PrintBombaView2(Bomba* bomba)
 {
   lcd.setCursor(0, 1);
-  lcd.print(F("Contactor: "));
+  lcd.print(F("Contactor:          "));
   if (GetBombaState(bomba) == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
   {
     lcd.setCursor(11, 1);
-    lcd.print(F("OK       "));
+    lcd.print(F("ERROR"));
   }
   else
   {
     lcd.setCursor(11, 1);
-    lcd.print(F("ERROR    "));
+    lcd.print(F("OK"));
   }
 
   lcd.setCursor(0, 2);
-  lcd.print(F("Termico:             "));
+  lcd.print(F("Termico:            "));
   if (bomba->IsTermicoOk)
   {
     lcd.setCursor(9, 2);
-    lcd.print(F("OK         "));
+    lcd.print(F("OK"));
   }
   else
   {
     lcd.setCursor(9, 2);
-    lcd.print(F("ERROR      "));
+    lcd.print(F("ERROR"));
   }
 
   lcd.setCursor(0, 3);
-  lcd.print(F("Errores térmico:    "));
-  lcd.setCursor(16, 3);
+  lcd.print(F("Errores termico:    "));
+  lcd.setCursor(17, 3);
   if (bomba->Number == BOMBA1)
-    lcd.print(statistics.Bomba1TotalMinutes);
+    lcd.print(statistics.Bomba1ErrorTermicoCount);
   else
-    lcd.print(statistics.Bomba2TotalMinutes);
+    lcd.print(statistics.Bomba2ErrorTermicoCount);
 }
 
 

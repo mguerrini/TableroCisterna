@@ -95,7 +95,7 @@ void ReadFases()
 
   if (isOkCurrVal != automaticFSM.IsFaseOk)
   {
-    if (automaticFSM.IsFaseOk)
+    if (isOkCurrVal)
     {
       //muestro la pantalla mormal
       ShowMainView();
@@ -123,7 +123,7 @@ boolean ReadFase1(unsigned long t)
 
 #ifdef FASE1_ENABLED
   int fase1Val = analogRead(FASE1_INPUT_PIN);
-  int volts = mapLocal(fase1Val, 0, fase1.ConversionFactor, 0, fase1.InputVoltsReference);
+  float volts = mapLocal(fase1Val, 0, fase1.ConversionFactor, 0, fase1.InputVoltsReference);
   //agrego el nuevo valor
   updateFaseValues(&fase1, t, volts);
 
@@ -143,7 +143,7 @@ boolean ReadFase2(unsigned long t)
 
 #ifdef FASE2_ENABLED
   int fase2Val = analogRead(FASE2_INPUT_PIN);
-  int volts = mapLocal(fase2Val, 0, fase2.ConversionFactor, 0, fase2.InputVoltsReference);
+  float volts = mapLocal(fase2Val, 0, fase2.ConversionFactor, 0, fase2.InputVoltsReference);
   //agrego el nuevo valor
   updateFaseValues(&fase2, t, volts);
 #else
@@ -162,7 +162,7 @@ boolean ReadFase3(unsigned long t)
 
 #ifdef FASE3_ENABLED
   int fase3Val = analogRead(FASE3_INPUT_PIN);
-  int volts = mapLocal(fase3Val, 0, fase3.ConversionFactor, 0, fase3.InputVoltsReference);
+  float volts = mapLocal(fase3Val, 0, fase3.ConversionFactor, 0, fase3.InputVoltsReference);
 
   //agrego el nuevo valor
   updateFaseValues(&fase3, t, volts);
@@ -175,7 +175,7 @@ boolean ReadFase3(unsigned long t)
 }
 
 
-void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
+void updateFaseValues(Fase * fase, unsigned long readTime, float volts)
 {
   fase->ReadCount = fase->ReadCount + 1;
   fase->ReadTotal = fase->ReadTotal + volts;
@@ -189,16 +189,16 @@ void updateFaseValues(Fase * fase, unsigned long readTime, int volts)
   if (fase->ReadCount >= FASE_READ_COUNT_MAX)
   {
     //calculo el procentaje
-    int value = fase->ReadTotal / fase->ReadCount;
+    float value = fase->ReadTotal / fase->ReadCount;
 
     fase->Voltage = value;
     fase->IsOk = fase->Voltage > FASE_MIN_VOLTAGE;
-    /*
+/*
         Serial.print(F("Voltage: "));
         Serial.print(fase->Voltage);
         Serial.print(F(" IsOk: "));
         Serial.println(fase->IsOk);
-    */
+*/    
     //reseteo
     fase->ReadCount = 0;
     fase->ReadTotal = 0;
@@ -230,7 +230,7 @@ void OnFaseOk()
 void calibrateFase(int pinNumber, int faseNumber, String voltsStr)
 {
   voltsStr.trim();
-  long inputVolts = voltsStr.toInt();
+  float inputVolts = voltsStr.toFloat();
 
   if (inputVolts <= 0)
   {
@@ -283,7 +283,7 @@ void calibrateFase(int pinNumber, int faseNumber, String voltsStr)
   }
 }
 
-int doCalibrateFase(int pinNumber, int faseNumber, int inputVolts)
+int doCalibrateFase(int pinNumber, int faseNumber, float inputVolts)
 {
   Serial.print(F("Inicio calibracion Fase "));
   Serial.println(faseNumber);

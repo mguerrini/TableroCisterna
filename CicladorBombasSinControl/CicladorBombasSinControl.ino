@@ -1,5 +1,5 @@
 
-#define TEST
+#define LOG_ENABLED
 
 //DISPLAYS
 #define DISPLAY_20x4_I2C
@@ -7,7 +7,7 @@
 // --- DEBUG ---
 #define DEBUG
 #ifdef DEBUG
-#define DEBUG_CONTINUE_PIN A3
+  #define DEBUG_CONTINUE_PIN A3
 #endif
 
 
@@ -20,14 +20,14 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 // ****************************************************************** //
 //INT : 2 BYTES
 //LONG: 4 BYTES
-//ints
-#define FASE1_TENSION_ENTRADA_ADDR 0 //int
-#define FASE2_TENSION_ENTRADA_ADDR 2 //int
-#define FASE3_TENSION_ENTRADA_ADDR 4 //int
+//FLOAT: 4 BYTES
+#define FASE1_TENSION_ENTRADA_ADDR 0 //float
+#define FASE2_TENSION_ENTRADA_ADDR 4 //float
+#define FASE3_TENSION_ENTRADA_ADDR 8 //float
 
-#define FASE1_FACTOR_CONVERSION_ADDR 6  //int
-#define FASE2_FACTOR_CONVERSION_ADDR 8  //int
-#define FASE3_FACTOR_CONVERSION_ADDR 10 //int
+#define FASE1_FACTOR_CONVERSION_ADDR 12  //int
+#define FASE2_FACTOR_CONVERSION_ADDR 14  //int
+#define FASE3_FACTOR_CONVERSION_ADDR 16 //int
 
 
 #define BOMBA1_USES_ADDR 20 //unsigned long
@@ -48,13 +48,16 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 //                        CONFIGURACIONES
 // ****************************************************************** //
 
+#define BTN_PRESSED_TIME 20 //20 milisegundos de boton presionado, para evitar rebote
+
 // ====================== BOTONES VARIOS ====================
 #define BOMBA_SWAP_BTN_PIN 12  //Cambiar bomba seleccionada
 #define RESET_BTN_PIN 11
-#define VIEW_INFO_PIN A0 //Muestra información estadisticas y valores varios
+
+// ====================== INFO VIEW ====================
 
 #define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
-#define BTN_PRESSED_TIME 20 //20 milisegundos de boton presionado, para evitar rebote
+#define VIEW_INFO_PIN A0 //Muestra información estadisticas y valores varios
 
 // ====================== INVERSOR ======================
 //salida al rele que activa el Rele de los contactores
@@ -274,13 +277,13 @@ typedef struct {
 
 //--- FASES ---
 typedef struct {
-  int Voltage;
+  float Voltage;
   boolean IsOk;
 
-  int InputVoltsReference;
+  float InputVoltsReference;
   int ConversionFactor;
 
-  unsigned long ReadTotal;
+  float ReadTotal;
   byte ReadCount;
   unsigned long LastRead;
 } Fase;
@@ -377,7 +380,6 @@ void setup() {
   Serial.println(F("Display - Ready"));
 
   Serial.println(F("Process - Ready"));
-
 }
 
 
@@ -391,6 +393,9 @@ void loop() {
   //leo el modo de ejecución (MANUAL o AUTOMATICO)
   ReadExecutionMode();
 
+  //Leo el boton de info
+  ReadInfoViewButton();
+  
   //Veo el reset
   ReadResetAndClearStatisticsButton();
 
@@ -503,7 +508,7 @@ void SetupPins()
   //digitalWrite(TANQUE_EMPTY_FULL_PIN, HIGH);
 }
 
-inline unsigned long deltaMillis(unsigned long currRead, unsigned long prevRead)
+unsigned long deltaMillis(unsigned long currRead, unsigned long prevRead)
 {
   if (currRead >= prevRead)
     return currRead - prevRead;

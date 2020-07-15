@@ -41,7 +41,9 @@ void CicladorLoop()
 
       //deberia poner la bomba en estado de timeout de llenado
       automaticFSM.NextState = AUTO_CHANGE_BOMBA;
+#ifdef LOG_ENABLED
       PrintWorkingFSMMessage(F("Bomba Activa Fill Timeout"));
+#endif
       break;
 
     case AUTO_ERROR_BOMBA_WORKING:
@@ -76,7 +78,9 @@ void AUTO_Idle(Bomba* bomba)
   {
     //Cambio de bomba.
     automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
+#endif
     return;
   }
 
@@ -90,11 +94,15 @@ void AUTO_Idle(Bomba* bomba)
     {
       //hay un error....no se deberia dar esta situacion a no ser que sea un error en el circuito de lectura de los sensores
       //registro el error en el display..
+#ifdef LOG_ENABLED
       PrintWorkingFSMMessage(F("** Error en la lectura de los sensores del tanque **"));
+#endif
     }
 
     automaticFSM.NextState = AUTO_STARTING;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Encendida"));
+#endif
     return;
   }
 
@@ -103,7 +111,9 @@ void AUTO_Idle(Bomba* bomba)
   {
     //deberia encenderse la bomba
     automaticFSM.NextState = AUTO_STARTING;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Tanque Vacío"));
+#endif
     return;
   }
 }
@@ -120,14 +130,18 @@ void AUTO_Starting(Bomba* bomba)
   {
     //listo...paso al estado working
     automaticFSM.NextState = AUTO_WORKING;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Encendida"));
+#endif
     return;
   }
 
   if (!IsBombaAvailable(bomba))
   {
     automaticFSM.NextState = AUTO_IDLE;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
+#endif
     return;
   }
 
@@ -135,13 +149,17 @@ void AUTO_Starting(Bomba* bomba)
   if (IsFirstTimeInAutoState())
   {
     bomba->RequestOn = true;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("First Time - Request On"));
+#endif
     return;
   }
 
   //intento encenderla...hasta que tire error por timeout o termico o arranqe
   bomba->RequestOn = true;
+#ifdef LOG_ENABLED
   PrintWorkingFSMMessage(F("Bomba Off - Request On"));
+#endif
 }
 
 // ============== WORKING ============== //
@@ -152,7 +170,9 @@ void AUTO_Working(Bomba* bomba)
   {
     //Cambio de bomba.
     automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Activa no disponible"));
+#endif
     return;
   }
 
@@ -166,19 +186,24 @@ void AUTO_Working(Bomba* bomba)
     if (!CanTurnOffBomba())
     {
       //no se deberia dar nunca este caso a no ser que se pase justo a automatico o el circuito de lectura de los niveles este roto.
+#ifdef LOG_ENABLED
       Serial.println(F("** Error en la lectura de los sensores del tanque **"));
+#endif
     }
 
     //no se deberia dar nunca este caso a no ser que se pase justo a automatico o el circuito de lectura de los niveles este roto.
     //deberia registrar el error en el visor
     automaticFSM.NextState = AUTO_STOPPING;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Apagada"));
+#endif
     return;
   }
 
   //detecta tanque lleno y o cisterna vacia....pero la bomba sigue encendida....el sistema no puede apagar una bomba
   if (CanTurnOffBomba()) //sensores.IsTanqueSensorMaxVal || sensores.IsCisternaSensorMinVal || IsBombaOff(bomba))
   {
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("*** Sensores de nivel en falla ***"));
 
     if (sensores.IsTanqueSensorMaxVal)
@@ -192,6 +217,7 @@ void AUTO_Working(Bomba* bomba)
     {
       PrintWorkingFSMMessage(F("Cisterna: Vacia"));
     }
+#endif
     return;
   }
 
@@ -203,7 +229,9 @@ void AUTO_Working(Bomba* bomba)
   {
     //cambio de bomba.....no esta funcionando
     automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Activa Fill Timeout"));
+#endif
   }
 
 }
@@ -215,7 +243,9 @@ void AUTO_NotAvailablesBombas(Bomba * bomba) {
   if (IsFirstTimeInAutoState())
   {
     StartAlarmNotAvailablesBombas();
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Start Alarma"));
+#endif
     return;
   }
 
@@ -230,10 +260,13 @@ void AUTO_NotAvailablesBombas(Bomba * bomba) {
       return;
 
     automaticFSM.NextState = AUTO_IDLE;
+
+#ifdef LOG_ENABLED
     if (bomba->Number == BOMBA1)
       PrintWorkingFSMMessage(F("Bomba 1 disponible-Stop Alarma"));
     else
       PrintWorkingFSMMessage(F("Bomba 2 disponible-Stop Alarma"));
+#endif
 
     StopAlarmNotAvailablesBombas();
   }
@@ -254,12 +287,16 @@ void AUTO_Stopping(Bomba* bomba)
     if (bomba->Uses >= BOMBA_USES_MAX)
     {
       automaticFSM.NextState = AUTO_CHANGE_BOMBA;
+#ifdef LOG_ENABLED
       PrintWorkingFSMMessage(F("Usos máximo alcanzado->cambio de bomba"));
+#endif
     }
     else
     {
       automaticFSM.NextState = AUTO_IDLE;
+#ifdef LOG_ENABLED
       PrintWorkingFSMMessage(F("Usos máximo no alcanzado"));
+#endif
     }
 
     return;
@@ -269,7 +306,9 @@ void AUTO_Stopping(Bomba* bomba)
   {
     automaticFSM.StoppingTimer = millis();
     bomba->RequestOff = true;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Request Off"));
+#endif
     return;
   }
 
@@ -282,12 +321,16 @@ void AUTO_Stopping(Bomba* bomba)
     {
       //ERROR....NO SE DETUVO LA BOMBA Y SIGUE FUNCIONANDO...NUNCA DEBERIA OCURRIR, PORQUE LOS SENSORES APAGAN LAS BOMBAS
       automaticFSM.NextState = AUTO_ERROR_BOMBA_WORKING;
+#ifdef LOG_ENABLED
       PrintWorkingFSMMessage(F("Timeout Stopping - Bomba On"), wait, 2 * BOMBA_TURNING_OFF_TIME);
+#endif
     }
     else
     {
       bomba->RequestOff = true;
+#ifdef LOG_ENABLED
       PrintWorkingFSMMessage(F("Esperando contactor abierto..."), wait, 2 * BOMBA_TURNING_OFF_TIME);
+#endif
     }
   }
 }
@@ -300,7 +343,9 @@ void AUTO_ChangeBombaFromNotAvailable(Bomba* bomba)
   {
     //Cambio de bomba.
     automaticFSM.NextState = AUTO_CHANGE_BOMBA;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Activa en Error"));
+#endif
     return;
   }
 
@@ -308,12 +353,16 @@ void AUTO_ChangeBombaFromNotAvailable(Bomba* bomba)
   {
     //esta deshabilitada
     automaticFSM.NextState = AUTO_CHANGE_BOMBA;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Activa Deshabilitada"));
+#endif
     return;
   }
 
   automaticFSM.NextState = AUTO_IDLE;
+#ifdef LOG_ENABLED
   PrintWorkingFSMMessage(F("Bomba Activa Normalizada"));
+#endif
 }
 
 
@@ -325,17 +374,20 @@ void AUTO_ChangeBomba(Bomba* bomba)
   if (bomba == NULL)
   {
     automaticFSM.NextState = AUTO_NOT_AVAILABLES_BOMBAS;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Sin Bombas disponibles"));
+#endif
     return;
   }
 
   automaticFSM.NextState = AUTO_IDLE;
 
+#ifdef LOG_ENABLED
   if (bomba->Number == BOMBA1)
-    PrintWorkingFSMMessage(F("Bomba 1 activa"));
+    PrintWorkingFSMMessage(F("B1 activa"));
   else
-    PrintWorkingFSMMessage(F("Bomba 2 activa"));
-
+    PrintWorkingFSMMessage(F("B2 activa"));
+#endif
 }
 
 // ============== ERROR BOMBA WORKING ============== //
@@ -347,7 +399,9 @@ void AUTO_ErrorBombaWorking(Bomba* bomba)
   {
     StopAlarmBomba(bomba);
     automaticFSM.NextState = AUTO_STOPPING;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba Off"));
+#endif
     return;
   }
 
@@ -356,7 +410,9 @@ void AUTO_ErrorBombaWorking(Bomba* bomba)
   {
     StopAlarmBomba(bomba);
     automaticFSM.NextState = AUTO_STOPPING;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Bomba No Disponible"));
+#endif
     return;
   }
 
@@ -365,7 +421,9 @@ void AUTO_ErrorBombaWorking(Bomba* bomba)
     //no deberia apagarse....quizas se paso a manual justo cuando midio el tanque lleno, vuelve a working
     StopAlarmBomba(bomba);
     automaticFSM.NextState = AUTO_WORKING;
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Tanque Empty - Cisterna Normal - Bomba On"));
+#endif
     return;
   }
 
@@ -376,7 +434,9 @@ void AUTO_ErrorBombaWorking(Bomba* bomba)
   {
     StartAlarmBombaNotStop(bomba);
     //TODO Resaltar que la bomba no se detiene
+#ifdef LOG_ENABLED
     PrintWorkingFSMMessage(F("Start Alarm - Error Bomba ON"));
+#endif
     return;
   }
 
@@ -444,14 +504,13 @@ Bomba* GetActiveBomba()
 }
 
 
-
 // *************************************************** //
 //                       PRINT
 // *************************************************** //
 
 void PrintEnterStateWorkingFSM()
 {
-#ifdef TEST
+#ifdef LOG_ENABLED
   Serial.print(F("Process: "));
   PrintStateWorkingFSM(automaticFSM.State);
 #endif
@@ -460,7 +519,7 @@ void PrintEnterStateWorkingFSM()
 
 void PrintExitStateWorkingFSM()
 {
-#ifdef TEST
+#ifdef LOG_ENABLED
   byte state = automaticFSM.State;
 
   if (automaticFSM.NextState != AUTO_NULL)
@@ -474,7 +533,7 @@ void PrintExitStateWorkingFSM()
 
 void PrintWorkingFSMMessage(const __FlashStringHelper* msg)
 {
-#ifdef TEST
+#ifdef LOG_ENABLED
   Serial.print(F(" ("));
   Serial.print(msg);
   Serial.print(F(")"));
@@ -484,7 +543,7 @@ void PrintWorkingFSMMessage(const __FlashStringHelper* msg)
 
 void PrintWorkingFSMMessage(const __FlashStringHelper* msg, long wait, long maximo)
 {
-#ifdef TEST
+#ifdef LOG_ENABLED
   Serial.print(F(" ("));
   Serial.print(msg);
   Serial.print(F(" wait: "));

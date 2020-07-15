@@ -57,6 +57,19 @@ void ReadCommands()
 }
 
 
+// *************************************************** //
+//                    VIEW INFO BUTTON
+// *************************************************** //
+
+void ReadInfoViewButton()
+{
+  if (IsInfoViewButtonPressed())
+  {
+    Serial.println(F("Show Info View "));
+    ShowInfoView();
+  }
+}
+
 
 // *************************************************** //
 //                    SWAP BUTTON
@@ -73,7 +86,6 @@ void ReadSwapButton()
     SwapAndActiveBomba();
   }
 }
-
 
 
 // *************************************************** //
@@ -127,6 +139,14 @@ boolean IsCleanStatisticsButtonPressed()
   return IsButtonPressedWithTimeRange(RESET_BTN_PIN, state, isPressed, startTime, CLEAN_STADISTICS_PRESS_TIME, 0);
 }
 
+boolean IsInfoViewButtonPressed()
+{
+  static unsigned long startTime = millis();
+  static boolean state = digitalRead(VIEW_INFO_PIN);
+  static boolean isPressed = false;
+
+  return IsButtonPressed(VIEW_INFO_PIN, state, isPressed, startTime);
+}
 
 
 
@@ -206,6 +226,7 @@ void DoPrintStatus()
 
   PrintAlarm();
   Serial.println();
+  
 }
 
 void PrintView()
@@ -332,10 +353,10 @@ void PrintStateBomba(Bomba* bomba, bool newLine)
 }
 
 
-long mapLocal(float value, float in_min, float in_max, float out_min, float out_max)
+float mapLocal(float value, float in_min, float in_max, float out_min, float out_max)
 {
   float v = (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-  float output = round(v);
+//  float output = round(v);
 
   /*
     Serial.print("Map Value: ");
@@ -343,7 +364,7 @@ long mapLocal(float value, float in_min, float in_max, float out_min, float out_
     Serial.print(" ");
     Serial.print(output);
   */
-  return output;
+  return v;
 }
 
 
