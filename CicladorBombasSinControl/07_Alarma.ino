@@ -1,13 +1,13 @@
 //************ VARIABLES ******************
 
-const int TimeOn_AlarmaManual = 100;
-const int TimeOff_AlarmaManual = 3000;
+#define TimeOn_AlarmaManual 100
+#define TimeOff_AlarmaManual 3000
 
-const int TimeOn_AlarmaHigh = 200;
-const int TimeOff_AlarmaHigh = 200;
+#define TimeOn_AlarmaHigh 200
+#define TimeOff_AlarmaHigh 200
 
-const int TimeOn_AlarmaBomba = 100;
-const int TimeOff_AlarmaBomba = 300;
+#define TimeOn_AlarmaBomba 100
+#define TimeOff_AlarmaBomba 300
 
 //********************************************
 

@@ -15,7 +15,7 @@ void SetupFase()
 
 #ifdef FASE_FROM_EEPROM_ENABLED
 
-  int voltRef = 0;
+  float voltRef = 0;
   int cal = 0;
   EEPROM.get(FASE1_TENSION_ENTRADA_ADDR, voltRef);
   EEPROM.get(FASE1_FACTOR_CONVERSION_ADDR, cal);

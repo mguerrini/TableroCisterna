@@ -31,11 +31,13 @@ void ReadCisternaSensors()
 
     sensores.CisternaEmptyStartTime = millis();
 
+#ifdef LOG_ENABLED
     if (sensores.IsCisternaSensorMinVal)
       Serial.println(F("Cisterna: Vacia."));
     else
       Serial.println(F("Cisterna: Normal."));
   }
+#endif
 
   if (sensores.IsCisternaSensorMinVal)
   {
@@ -68,11 +70,13 @@ void ReadTanqueSensors()
 
     UpdateTanqueDisplay();
 
+#ifdef LOG_ENABLED
     if (full)
       Serial.println(F("Tanque: Lleno."));
     else
       Serial.println(F("Tanque: Vacío."));
   }
+#endif
 }
 
 // ****************************************************************** //

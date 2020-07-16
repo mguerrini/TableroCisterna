@@ -13,17 +13,17 @@ void SetupBombas()
   //Read el estado enabled/disabled from EEPROM
   bomba1.Number = BOMBA1;
   bomba1.IsActive = false;
-  bomba1.FillTimeMinutesAverage = 0;
+  bomba1.FillTimeSecondsAverage = 0;
   ResetBomba(&bomba1);
 
   bomba2.Number = BOMBA2;
   bomba2.IsActive = false;
-  bomba2.FillTimeMinutesAverage = 0;
+  bomba2.FillTimeSecondsAverage = 0;
   ResetBomba(&bomba2);
 
   //el tiempo promedio de llenado se carga cuando se cargan las estadisticas en el SetupStatistics
 
-  //Inicializo los sensores 
+  //Inicializo los sensores
   IsBomba1ContactorClosed();
   IsBomba2ContactorClosed();
   IsBomba1EnabledButtonPressed();
@@ -33,7 +33,7 @@ void SetupBombas()
 
   //espero el tiempo de estabilizacion para volver a leerlos
   delay(BTN_PRESSED_TIME + BTN_PRESSED_TIME);
-  
+
   //activo la bomba 1
   ActivateBomba(&bomba1, false);
 
@@ -73,7 +73,8 @@ void ReadBombaSensors(Bomba* bomba)
 
   termicoChanged = termicoOk != bomba->IsTermicoOk;
   contactorChanged = contactorClosed != bomba->IsContactorClosed;
-  
+/*
+#ifdef LOG_ENABLED
   if (termicoChanged)
   {
     Serial.print(F("Termico changed - "));
@@ -81,10 +82,12 @@ void ReadBombaSensors(Bomba* bomba)
     Serial.print(F(" -> "));
     Serial.println(termicoOk);
   }
-
+#endif
+*/
   bomba->IsContactorClosed = contactorClosed;
   bomba->IsTermicoOk = termicoOk;
 
+#ifdef LOG_ENABLED
   if (contactorChanged)
   {
     Serial.print(F("Bomba "));
@@ -104,6 +107,7 @@ void ReadBombaSensors(Bomba* bomba)
     else
       Serial.println(F(": Termico Abierto"));
   }
+#endif
 }
 
 void ReadEnabledBombas()
@@ -265,11 +269,11 @@ void CleanFillTimes()
 {
   for (int i = 0; i < 10; i++)
   {
-    bomba1.FillTimeMinutes[i] = 0;
-    bomba2.FillTimeMinutes[i] = 0;
+    bomba1.FillTimeSeconds[i] = 0;
+    bomba2.FillTimeSeconds[i] = 0;
 
-    bomba1.FillTimeMinutesAverage = 0;
-    bomba1.FillTimeMinutesAverage = 0;
+    bomba1.FillTimeSecondsAverage = 0;
+    bomba1.FillTimeSecondsAverage = 0;
   }
 }
 
@@ -277,23 +281,6 @@ void CleanFillTimes()
 // ****************************************************************** //
 //                        PROPIEDADES
 // ****************************************************************** //
-
-byte GetActiveBombaNumber()
-{
-  if (bomba1.IsActive)
-    return BOMBA1;
-  else
-    return BOMBA2;
-}
-
-byte GetActiveBombaUses()
-{
-  if (bomba1.IsActive)
-    return bomba1.Uses;
-  else
-    return bomba2.Uses;
-}
-
 bool IsBombaOff(Bomba* bomba)
 {
   return bomba->State == BOMBA_STATE_OFF;
@@ -304,19 +291,6 @@ bool IsBombaOn(Bomba* bomba)
   return bomba->State == BOMBA_STATE_ON;
 }
 
-bool IsBombaEnabled(Bomba* bomba)
-{
-  if (bomba->Number == BOMBA1)
-    return bomba1.IsEnabled;
-  else
-    return bomba2.IsEnabled;
-}
-
-bool IsBombaError(Bomba* bomba, byte error)
-{
-  return bomba->State == error;
-}
-
 bool IsBombaError(Bomba* bomba)
 {
   return bomba->State < 0;
@@ -324,17 +298,12 @@ bool IsBombaError(Bomba* bomba)
 
 bool IsBombaAvailable(Bomba* bomba)
 {
-  return IsBombaEnabled(bomba) && !IsBombaError(bomba);
-}
-
-byte GetBombaState(Bomba* bomba)
-{
-  return bomba->State;
+  return bomba->IsEnabled && !IsBombaError(bomba);
 }
 
 
-//Devuelve el tiempo de encendido de la bomba en minutos
-unsigned long GetBombaWorkingTime(Bomba* bomba)
+//Devuelve el tiempo de encendido de la bomba en segundos
+unsigned long GetBombaWorkingTimeInSeconds(Bomba* bomba)
 {
   if (!IsBombaOn(bomba))
     return 0;
@@ -343,15 +312,15 @@ unsigned long GetBombaWorkingTime(Bomba* bomba)
   unsigned long minutes = 0;
 
   delta = deltaMillis(millis(), bomba->StartTime);
-  minutes = delta / 60000;
+  minutes = delta / 1000;
 
   return minutes;
 }
 
 //Devuelve el tiempo maximo de llenado antes de que se considere que la bomba no funciona.
-unsigned long GetBombaWorkingTimeMaximum(Bomba* bomba)
+unsigned long GetBombaWorkingTimeMaximumSeconds(Bomba* bomba)
 {
-  unsigned int avg = bomba->FillTimeMinutesAverage;
+  unsigned int avg = bomba->FillTimeSecondsAverage;
   if (avg > 0)
     return TANQUE_TIME_TO_FULL_AVERAGE_PERCENTAGE * avg;
   else

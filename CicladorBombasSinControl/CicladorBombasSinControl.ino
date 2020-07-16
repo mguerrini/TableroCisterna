@@ -136,7 +136,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
 
 #define BOMBA_FILL_TIME_HOURS_MAX 6//Tiempo de llenado inicial del tanque en horas. Un numero grande para que no se corte antes de tiempo
-#define BOMBA_REFRESH_WORKING_TIME 60000 //Tiempo entre refrescos de tiempo de trabajo de las bombas (milisegundos)
+#define BOMBA_REFRESH_WORKING_TIME 1000 //Tiempo entre refrescos de tiempo de trabajo de las bombas (milisegundos)
 
 // ====================== CISTERNA/TANQUE ======================
 // --- CISTERNA ---
@@ -151,9 +151,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== ESTADISTICAS ======================
 //#define STATISTICS_SAVE_ENABLED
-const unsigned long STATISTICS_TIME_TO_SAVE = (24 / 3) * (60 * 60 * 1000); //3 veces por dia. Valor expresado en milisegundos
+#define STATISTICS_TIME_TO_SAVE 43200000 //(24 / 2) * (60 * 60 * 1000) 2 veces por dia. Valor expresado en milisegundos
 #define CLEAN_STADISTICS_PRESS_TIME 5000 //10 segundos - tiempo (milisegundos) que se tiene que tener presionado el boton reset para limpiar las estadisticas
-
 
 
 // ****************************************************************** //
@@ -184,14 +183,14 @@ const unsigned long STATISTICS_TIME_TO_SAVE = (24 / 3) * (60 * 60 * 1000); //3 v
 // ====================== FSM AUTO ESTADOS ======================
 #define AUTO_NULL 200
 #define AUTO_IDLE 201
-#define AUTO_NOT_AVAILABLES_BOMBAS 203
-#define AUTO_STARTING 204
-#define AUTO_WORKING 205
-#define AUTO_STOPPING 206
-#define AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE 209
-#define AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT 210
-#define AUTO_CHANGE_BOMBA 211
-#define AUTO_ERROR_BOMBA_WORKING 212
+#define AUTO_STARTING 202
+#define AUTO_WORKING 203
+#define AUTO_STOPPING 204
+#define AUTO_NOT_AVAILABLES_BOMBAS 205
+#define AUTO_CHANGE_BOMBA_FROM_NOT_AVAILABLE 206
+#define AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT 207
+#define AUTO_CHANGE_BOMBA 208
+#define AUTO_ERROR_BOMBA_WORKING 209
 
 
 // ****************************************************************** //
@@ -201,7 +200,7 @@ const unsigned long STATISTICS_TIME_TO_SAVE = (24 / 3) * (60 * 60 * 1000); //3 v
 typedef struct  {
   byte Number;
   bool IsEnabled;
-  byte State; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
+  int State; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
 
   bool IsActive;
   int Uses;
@@ -218,8 +217,8 @@ typedef struct  {
   byte MachineState;
   byte NextMachineState;
 
-  unsigned int FillTimeMinutes[10];
-  unsigned int FillTimeMinutesAverage;
+  unsigned long FillTimeSeconds[10];
+  unsigned long FillTimeSecondsAverage;
 
   unsigned long StartTime;
   unsigned long RefreshTime;
@@ -506,12 +505,4 @@ void SetupPins()
   //digitalWrite(CISTERNA_EMPTY_PIN, HIGH);
   pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
   //digitalWrite(TANQUE_EMPTY_FULL_PIN, HIGH);
-}
-
-unsigned long deltaMillis(unsigned long currRead, unsigned long prevRead)
-{
-  if (currRead >= prevRead)
-    return currRead - prevRead;
-  else
-    return currRead; //volvio a cero...uso este valor como referencia....pierdo prevRead hasta el maximo..pero pasa 1 vez cada 47 dias
 }

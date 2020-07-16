@@ -26,20 +26,13 @@ void SaveStatistics()
 
 void Statistics_BombaOn(Bomba* bomba)
 {
+  if (bomba->StartTime == 0)
+    return;
+
   if (bomba->Number == BOMBA1)
-  {
-    if (bomba->StartTime == 0)
-      return;
-
     statistics.Bomba1Uses = statistics.Bomba1Uses + 1;
-  }
   else
-  {
-    if (bomba->StartTime == 0)
-      return;
-
     statistics.Bomba2Uses = statistics.Bomba2Uses + 1;
-  }
 
   statistics.Changed = true;
 }
@@ -47,64 +40,76 @@ void Statistics_BombaOn(Bomba* bomba)
 
 void Statistics_BombaOff(Bomba* bomba, boolean registerFillTime)
 {
-  if (bomba->Number == BOMBA1)
-  {
-    if (bomba->StartTime > 0)
+  /*
+    if (bomba->Number == BOMBA1)
     {
-      unsigned long delta1 = deltaMillis(millis(), bomba->StartTime);
-      unsigned int minutes1 = delta1 / 60000;
-      if (registerFillTime)
-        Stadistics_AddFillTime(bomba, minutes1);
+      if (bomba->StartTime > 0)
+      {
+        unsigned long delta1 = deltaMillis(millis(), bomba->StartTime);
+        unsigned int seconds1 = delta1 / 1000;
+        if (registerFillTime)
+          Stadistics_AddFillTime(bomba, seconds1);
 
-      statistics.Bomba1TotalMinutes = statistics.Bomba1TotalMinutes + minutes1; //minutos
-      statistics.Changed = true;
+        statistics.Bomba1TotalMinutes = statistics.Bomba1TotalMinutes + (seconds1 / 60); //minutos
+        statistics.Changed = true;
+      }
     }
-  }
-  else
-  {
-    if (bomba->StartTime > 0)
+    else
     {
-      unsigned long delta2 = deltaMillis(millis(), bomba->StartTime);
-      unsigned int minutes2 = delta2 / 60000;
-      if (registerFillTime)
-        Stadistics_AddFillTime(bomba, minutes2);
+      if (bomba->StartTime > 0)
+      {
+        unsigned long delta2 = deltaMillis(millis(), bomba->StartTime);
+        unsigned int seconds2 = delta2 / 1000;
+        if (registerFillTime)
+          Stadistics_AddFillTime(bomba, seconds2);
 
-      statistics.Bomba2TotalMinutes = statistics.Bomba2TotalMinutes + minutes2; //minutos
-      statistics.Changed = true;
+        statistics.Bomba2TotalMinutes = statistics.Bomba2TotalMinutes + (seconds2 / 60); //minutos
+        statistics.Changed = true;
+      }
     }
+  */
+  if (bomba->StartTime > 0)
+  {
+    unsigned long delta1 = deltaMillis(millis(), bomba->StartTime);
+    unsigned int seconds1 = delta1 / 1000;
+    if (registerFillTime)
+      Stadistics_AddFillTime(bomba, seconds1);
+
+    if (bomba->Number == BOMBA1)
+      statistics.Bomba1TotalMinutes = statistics.Bomba1TotalMinutes + (seconds1 / 60); //minutos
+    else
+      statistics.Bomba2TotalMinutes = statistics.Bomba2TotalMinutes + (seconds1 / 60); //minutos
+
+    statistics.Changed = true;
   }
 }
 
-void Stadistics_AddFillTime(Bomba* bomba, unsigned int fillTime)
+void Stadistics_AddFillTime(Bomba* bomba, unsigned long fillTime)
 {
-  unsigned int total = fillTime;
+  unsigned long total = fillTime;
   byte count = 1;
 
   for (int i = 8; i >= 0; i--)
   {
-    bomba->FillTimeMinutes[i + 1] = bomba->FillTimeMinutes[i];
+    bomba->FillTimeSeconds[i + 1] = bomba->FillTimeSeconds[i];
 
-    if (bomba->FillTimeMinutes[i + 1] > 0)
+    if (bomba->FillTimeSeconds[i + 1] > 0)
     {
       count++;
-      total += bomba->FillTimeMinutes[i + 1];
+      total += bomba->FillTimeSeconds[i + 1];
     }
   }
 
-  bomba->FillTimeMinutes[0] = fillTime;
-  bomba->FillTimeMinutesAverage = total / count;
+  bomba->FillTimeSeconds[0] = fillTime;
+  bomba->FillTimeSecondsAverage = total / count;
 }
 
 void Statistics_BombaErrorTermico(Bomba* bomba)
 {
   if (bomba->Number == BOMBA1)
-  {
     statistics.Bomba1ErrorTermicoCount = statistics.Bomba1ErrorTermicoCount + 1;
-  }
   else
-  {
     statistics.Bomba2ErrorTermicoCount = statistics.Bomba2ErrorTermicoCount + 1;
-  }
 
   statistics.Changed = true;
 }
@@ -155,7 +160,6 @@ void CleanStatistics(boolean save)
 
 void DoSaveStatistics()
 {
-
 #ifdef STATISTICS_SAVE_ENABLED
   unsigned long lAux = 0;
   unsigned int iAux = 0;
@@ -168,8 +172,6 @@ void DoSaveStatistics()
   EEPROM.get(BOMBA2_USES_ADDR, lAux);
   if (lAux != statistics.Bomba2Uses)
     EEPROM.put(BOMBA2_USES_ADDR, statistics.Bomba2Uses);
-
-
 
   //Minutos de uso
   EEPROM.get(BOMBA1_TOTAL_MINUTES_ADDR, lAux);
@@ -270,42 +272,37 @@ void ReadStatistics()
 
 void PrintStatistics()
 {
-  Serial.println(F("*** Valores Estadisticos ***"));
-  Serial.println(F("*** BOMBA 1 ***"));
-
-  Serial.print(F("Cantidad de Usos: "));
-  Serial.println(statistics.Bomba1Uses);
-
-  Serial.print(F("Minutos totales de uso: "));
-  Serial.println(statistics.Bomba1TotalMinutes);
-
-  Serial.print(F("Cantidad de errores de termico: "));
-  Serial.println(statistics.Bomba1ErrorTermicoCount);
-
-  Serial.print(F("Tiempo promedio de llenado de tanque (minutos): "));
-  Serial.println(bomba1.FillTimeMinutesAverage);
+  Serial.println(F("*** ESTADISTICAS ***"));
+  PrintStatisticsBomba(statistics.Bomba1Uses, statistics.Bomba1TotalMinutes, statistics.Bomba1ErrorTermicoCount, &bomba1);
+  Serial.println();
+  PrintStatisticsBomba(statistics.Bomba2Uses, statistics.Bomba2TotalMinutes, statistics.Bomba2ErrorTermicoCount, &bomba2);
+  Serial.println();
 
   Serial.println();
-  Serial.println(F("*** BOMBA 2 ***"));
+  Serial.println(F("*** ERR DE FASE ***"));
 
-  Serial.print(F("Cantidad de Usos: "));
-  Serial.println(statistics.Bomba2Uses);
-
-  Serial.print(F("Minutos totales de uso: "));
-  Serial.println(statistics.Bomba2TotalMinutes);
-
-  Serial.print(F("Cantidad de errores de termico: "));
-  Serial.println(statistics.Bomba2ErrorTermicoCount);
-
-  Serial.print(F("Tiempo promedio de llenado de tanque (minutos): "));
-  Serial.println(bomba2.FillTimeMinutesAverage);
-
-  Serial.println();
-  Serial.println(F("*** ERRORES DE FASE ***"));
-
-  Serial.print(F("Cantidad de errores de fase: "));
+  Serial.print(F("# Err: "));
   Serial.println(statistics.ErrorFaseCount);
 
-  Serial.print(F("Tiempo total de perdida de fase (minutos): "));
+  Serial.print(F("Tiempo (minutos): "));
   Serial.println(statistics.ErrorFaseTotalMinutes);
+}
+
+void PrintStatisticsBomba(unsigned long uses, unsigned long min, unsigned long errTerm, Bomba* bomba)
+{
+  Serial.print(F("*** BOMBA "));
+  Serial.print(bomba->Number);
+  Serial.println(F(" ***"));
+
+  Serial.print(F("# Usos: "));
+  Serial.println(uses);
+
+  Serial.print(F("Usos min: "));
+  Serial.println(min);
+
+  Serial.print(F("# ERR termico: "));
+  Serial.println(errTerm);
+
+  Serial.print(F("Tiempo llenado seg.: "));
+  Serial.println(bomba->FillTimeSecondsAverage);
 }

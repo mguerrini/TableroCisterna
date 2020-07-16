@@ -1,4 +1,8 @@
 
+// *************************************************** //
+//                  AUTO STATE MACHIENE
+// *************************************************** //
+
 void CicladorLoop()
 {
   Bomba* bomba = GetActiveBomba();
@@ -6,6 +10,25 @@ void CicladorLoop()
 
   automaticFSM.NextState = AUTO_NULL;
 
+  //ejecuto el estado correspondiente
+  ExecuteAutoState(bomba);
+
+  PrintExitStateWorkingFSM();
+
+  automaticFSM.FromState = automaticFSM.State;
+  if (automaticFSM.NextState != AUTO_NULL)
+    automaticFSM.State = automaticFSM.NextState;
+
+  //ejecuto la maquina de estados de las bombas
+  BombaStateMachine(&bomba1);
+  BombaStateMachine(&bomba2);
+}
+
+
+// ============== EXECUTION ============== //
+
+void ExecuteAutoState(Bomba* bomba)
+{
   switch (automaticFSM.State)
   {
     case AUTO_IDLE:
@@ -49,18 +72,7 @@ void CicladorLoop()
     case AUTO_ERROR_BOMBA_WORKING:
       AUTO_ErrorBombaWorking(bomba);
       break;
-
   }
-
-  PrintExitStateWorkingFSM();
-
-  automaticFSM.FromState = automaticFSM.State;
-  if (automaticFSM.NextState != AUTO_NULL)
-    automaticFSM.State = automaticFSM.NextState;
-
-  //ejecuto la maquina de estados de las bombas
-  BombaStateMachine(&bomba1);
-  BombaStateMachine(&bomba2);
 }
 
 // *************************************************** //
@@ -72,7 +84,12 @@ void AUTO_Idle(Bomba* bomba)
 {
   //sino esta ok la fase....no arranca el sistema. Deberia volver a idle porque los motores se apagaron
   if (!automaticFSM.IsFaseOk)
+  {
+#ifdef LOG_ENABLED
+    PrintWorkingFSMMessage(F("** Error en fase **"));
+#endif
     return;
+  }
 
   if (!IsBombaAvailable(bomba))
   {
@@ -200,7 +217,10 @@ void AUTO_Working(Bomba* bomba)
     return;
   }
 
+
   //detecta tanque lleno y o cisterna vacia....pero la bomba sigue encendida....el sistema no puede apagar una bomba
+  //cuando se corta por primera vez la FSM de la bomba esta en estado ON, pero primero se ejecuta este estado.....por eso pareciera que fuera un error.
+  //Habria que esperar un par de iteraciones antes de pensar que fue un error
   if (CanTurnOffBomba()) //sensores.IsTanqueSensorMaxVal || sensores.IsCisternaSensorMinVal || IsBombaOff(bomba))
   {
 #ifdef LOG_ENABLED
@@ -222,8 +242,8 @@ void AUTO_Working(Bomba* bomba)
   }
 
   //verifico el tiempo de bombeo...si supera el maximo....cambio de bomba
-  unsigned long workingMax = GetBombaWorkingTimeMaximum(bomba);
-  unsigned long workingTime = GetBombaWorkingTime(bomba);
+  unsigned long workingMax = GetBombaWorkingTimeMaximumSeconds(bomba);
+  unsigned long workingTime = GetBombaWorkingTimeInSeconds(bomba);
 
   if (workingTime > workingMax)
   {
@@ -314,7 +334,7 @@ void AUTO_Stopping(Bomba* bomba)
 
   if (IsBombaOn(bomba))
   {
-    //espero un tiempo prudencial hasta que arranque la bomba
+    //espero un tiempo prudencial hasta que se detenga la bomba
     unsigned long wait = deltaMillis(millis(), automaticFSM.StoppingTimer);
     //espero a que inicie....la bomba activa deberia estar en ON.
     if (wait > (2 * BOMBA_TURNING_OFF_TIME))
@@ -339,22 +359,15 @@ void AUTO_Stopping(Bomba* bomba)
 
 void AUTO_ChangeBombaFromNotAvailable(Bomba* bomba)
 {
-  if (IsBombaError(bomba))
+  if (IsBombaError(bomba) || !bomba->IsEnabled)
   {
     //Cambio de bomba.
     automaticFSM.NextState = AUTO_CHANGE_BOMBA;
 #ifdef LOG_ENABLED
-    PrintWorkingFSMMessage(F("Bomba Activa en Error"));
-#endif
-    return;
-  }
-
-  if (!IsBombaEnabled(bomba))
-  {
-    //esta deshabilitada
-    automaticFSM.NextState = AUTO_CHANGE_BOMBA;
-#ifdef LOG_ENABLED
-    PrintWorkingFSMMessage(F("Bomba Activa Deshabilitada"));
+    if (!bomba->IsEnabled)
+      PrintWorkingFSMMessage(F("Bomba Activa Deshabilitada"));
+    else
+      PrintWorkingFSMMessage(F("Bomba Activa en Error"));
 #endif
     return;
   }
@@ -395,23 +408,15 @@ void AUTO_ChangeBomba(Bomba* bomba)
 void AUTO_ErrorBombaWorking(Bomba* bomba)
 {
   //Si se apaga es por los niveles...los sensores quizas fallan
-  if (IsBombaOff(bomba))
+  if (IsBombaOff(bomba) || !IsBombaAvailable(bomba))
   {
     StopAlarmBomba(bomba);
     automaticFSM.NextState = AUTO_STOPPING;
 #ifdef LOG_ENABLED
-    PrintWorkingFSMMessage(F("Bomba Off"));
-#endif
-    return;
-  }
-
-  //paso a error
-  if (!IsBombaAvailable(bomba))
-  {
-    StopAlarmBomba(bomba);
-    automaticFSM.NextState = AUTO_STOPPING;
-#ifdef LOG_ENABLED
-    PrintWorkingFSMMessage(F("Bomba No Disponible"));
+    if (IsBombaOff(bomba))
+      PrintWorkingFSMMessage(F("Bomba Off"));
+    else
+      PrintWorkingFSMMessage(F("Bomba No Disponible"));
 #endif
     return;
   }

@@ -104,8 +104,9 @@ void ReadResetAndClearStatisticsButton()
     ResetBomba(&bomba1);
     ResetBomba(&bomba2);
 
-    UpdateBomba1Display();
-    UpdateBomba2Display();
+    UpdateBombaDisplay(&bomba1);
+    UpdateBombaDisplay(&bomba2);
+    
     UpdateActiveBombaDisplay();
     UpdateCisternaDisplay();
     UpdateTanqueDisplay();
@@ -294,15 +295,15 @@ void PrintBomba(Bomba* bomba)
   Serial.println(bomba->ContactorErrorCounter);
 
   Serial.print(F("Tiempo de llenado: "));
-  Serial.println(bomba->FillTimeMinutesAverage);
+  Serial.println(bomba->FillTimeSecondsAverage);
 
   Serial.print(F("Tiempos de llenado: "));
   for (int i = 0; i < 9; i++)
   {
-    Serial.print(bomba->FillTimeMinutes[i]);
+    Serial.print(bomba->FillTimeSeconds[i]);
     Serial.print(F(", "));
   }
-  Serial.println(bomba->FillTimeMinutes[9]);
+  Serial.println(bomba->FillTimeSeconds[9]);
 
   Serial.print(F("IsContactorClosed: "));
   PrintTrueOrFalse (bomba->IsContactorClosed);
@@ -352,6 +353,20 @@ void PrintStateBomba(Bomba* bomba, bool newLine)
     Serial.println();
 }
 
+// *************************************************** //
+//                AUXILIARES
+// *************************************************** //
+
+void convertSeconds2HMS(unsigned long totalSec, int &h, int &m, int &s)
+{
+    s = totalSec % 60;
+
+    totalSec = (totalSec - s)/60;
+    m = totalSec % 60;
+
+    totalSec = (totalSec - m)/60;
+    h = totalSec;
+}
 
 float mapLocal(float value, float in_min, float in_max, float out_min, float out_max)
 {
@@ -383,6 +398,15 @@ void PrintOnOrOff(boolean input)
     Serial.println(F("ON"));
   else
     Serial.println(F("OFF"));
+}
+
+
+unsigned long deltaMillis(unsigned long currRead, unsigned long prevRead)
+{
+  if (currRead >= prevRead)
+    return currRead - prevRead; // prevRead ----- currRead ----- maxValue
+  else
+    return (4294967295 - prevRead) + currRead; //volvio a cero: prevRead -------- maxValue - 0 ------- currRead
 }
 
 
