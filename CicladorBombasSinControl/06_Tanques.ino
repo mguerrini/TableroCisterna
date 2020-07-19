@@ -36,8 +36,9 @@ void ReadCisternaSensors()
       Serial.println(F("Cisterna: Vacia."));
     else
       Serial.println(F("Cisterna: Normal."));
-  }
 #endif
+    
+  }
 
   if (sensores.IsCisternaSensorMinVal)
   {
@@ -75,8 +76,8 @@ void ReadTanqueSensors()
       Serial.println(F("Tanque: Lleno."));
     else
       Serial.println(F("Tanque: Vacío."));
+#endif      
   }
-#endif
 }
 
 // ****************************************************************** //

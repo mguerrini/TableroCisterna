@@ -1,5 +1,9 @@
+#include <EEPROM.h>
 
 #define LOG_ENABLED
+#ifdef LOG_ENABLED
+//#define LOG_MIN_ENABLED
+#endif
 
 //DISPLAYS
 #define DISPLAY_20x4_I2C
@@ -75,6 +79,9 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 // ====================== FASES ======================
+//tension de entrada
+#define FASE_FROM_EEPROM_ENABLED // indica que se debe leer los valores almacenados en la EEPROM y no los valores constantes
+
 //#define FASE1_ENABLED
 #define FASE1_INPUT_PIN A3
 
@@ -87,9 +94,6 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define FASE_OUTPUT_PIN A1
 #define FASE_OUTPUT_CLOSE_RELE HIGH
 #define FASE_OUTPUT_OPEN_RELE LOW
-
-//tension de entrada
-#define FASE_FROM_EEPROM_ENABLED // indica que se debe leer los valores almacenados en la EEPROM y no los valores constantes
 
 #define TENSION_ENTRADA 5 //220 Volts, pero para testear lo pongo en 5
 //valores de referencia para el valor de 220V
@@ -150,9 +154,9 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 // ====================== ESTADISTICAS ======================
-//#define STATISTICS_SAVE_ENABLED
 #define STATISTICS_TIME_TO_SAVE 43200000 //(24 / 2) * (60 * 60 * 1000) 2 veces por dia. Valor expresado en milisegundos
 #define CLEAN_STADISTICS_PRESS_TIME 5000 //10 segundos - tiempo (milisegundos) que se tiene que tener presionado el boton reset para limpiar las estadisticas
+//#define STATISTICS_SAVE_ENABLED
 
 
 // ****************************************************************** //
@@ -226,6 +230,7 @@ typedef struct  {
   long ContactorErrorCounter;
   unsigned long StartError;
   unsigned long Timer; //se usa para controlar el tiempo de arranque o de paro
+  byte Message;
 } Bomba;
 
 
@@ -260,12 +265,12 @@ typedef struct  {
 typedef struct {
   unsigned long Bomba1Uses;
   unsigned long Bomba2Uses;
-  unsigned long Bomba1TotalMinutes;
-  unsigned long Bomba2TotalMinutes;
+  unsigned long Bomba1TotalSeconds;
+  unsigned long Bomba2TotalSeconds;
   unsigned long Bomba1ErrorTermicoCount;
   unsigned long Bomba2ErrorTermicoCount;
 
-  unsigned long ErrorFaseTotalMinutes;
+  unsigned long ErrorFaseTotalSeconds;
   unsigned long ErrorFaseCount;
   unsigned long LastTimeSaved;
 
@@ -298,6 +303,8 @@ typedef struct {
 
   boolean IsFaseOk;
   unsigned long StoppingTimer;
+
+  byte Message;
 } AutoFSM;
 
 
@@ -506,3 +513,77 @@ void SetupPins()
   pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
   //digitalWrite(TANQUE_EMPTY_FULL_PIN, HIGH);
 }
+
+
+//************************************************//
+//                 AUXILIARES
+//************************************************//
+// ============ MENSAJES DEBUG AUTO ============ //
+
+#define MSG_AUTO_ERROR_FASE 1
+#define MSG_AUTO_ERROR_SENSORES 2
+
+#define MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_VACIA 3
+#define MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_NORMAL 4
+#define MSG_AUTO_ERROR_STOPPING_BOMBA_TIMEOUT 5
+#define MSG_AUTO_ERROR_NOT_AVAILABLES_BOMBAS 6
+#define MSG_AUTO_ERROR_FILL_TIMEOUT 7
+#define MSG_AUTO_ERROR_BOMBA_ON_START_ALARMA 8
+
+
+#define MSG_AUTO_BOMBA_ACTIVA_NO_DISPONIBLE 9
+#define MSG_AUTO_BOMBA_ON 10
+#define MSG_AUTO_BOMBA_OFF_REQUEST_ON 11
+#define MSG_AUTO_BOMBA_OFF 12
+
+#define MSG_AUTO_TANQUE_VACIO 13
+#define MSG_AUTO_CISTERNA_EMPTY 14
+#define MSG_AUTO_TANQUE_VACIO_CISTERNA_NORMAL 15
+
+#define MSG_AUTO_CHANGE_BOMBA_USOS_MAXIMO_ALACANZADO 16
+
+#define MSG_AUTO_BOMBA_ACTIVA_NO_DISPONIBLE 17
+#define MSG_AUTO_BOMBA_ACTIVA_FILL_TIMEOUT 18
+
+#define MSG_AUTO_FIRST_TIME_REQUEST_ON 19
+#define MSG_AUTO_REQUEST_OFF 20
+#define MSG_AUTO_WAITING_APERTURA_CONTACTOR 21
+
+#define MSG_AUTO_START_ALARMA 22
+#define MSG_AUTO_B1_DISPONIBLE_STOP_ALARMA 23
+#define MSG_AUTO_B2_DISPONIBLE_STOP_ALARMA 24
+
+#define MSG_AUTO_B1_ACTIVA 25
+#define MSG_AUTO_B2_ACTIVA 26
+#define MSG_AUTO_BOMBA_ACTIVA_DISABLED 27
+#define MSG_AUTO_BOMBA_ACTIVA_ERROR 28
+#define MSG_AUTO_BOMBA_ACTIVA_OK 29
+
+
+// ============ MENSAJES DEBUG BOMBA ============ //
+#define MSG_BOMBA_ON 1
+#define MSG_BOMBA_OFF 2
+
+#define MSG_BOMBA_REQUEST_DISABLED 3
+#define MSG_BOMBA_REQUEST_ENABLED 4
+
+#define MSG_BOMBA_REQUEST_ON 5
+#define MSG_BOMBA_REQUEST_OFF 6
+
+#define MSG_BOMBA_TERMICO_ABIERTO 7
+#define MSG_BOMBA_TERMICO_OK_STOP_ALARM 8
+
+#define MSG_BOMBA_CONTACTOR_CERRADO 9
+#define MSG_BOMBA_CONTACTOR_ABIERTO 10
+#define MSG_BOMBA_START_TIMER 11
+#define MSG_BOMBA_CONTACTOR_CERRADO_TIMEOUT 12
+#define MSG_BOMBA_WAITING_CONTACTOR_CERRADO 13
+
+#define MSG_BOMBA_CONTACTOR_CERRADO_BOMBA_ON 14
+#define MSG_BOMBA_WAITING_CONTACTOR 15
+
+#define MSG_BOMBA_DISABLING 16
+#define MSG_BOMBA_DISABLED 17
+#define MSG_BOMBA_ENABLING 18
+
+#define MSG_BOMBA_ERROR_TERMICO_START_ALARM 19

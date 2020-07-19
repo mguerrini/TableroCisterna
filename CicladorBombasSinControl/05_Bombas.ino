@@ -73,17 +73,17 @@ void ReadBombaSensors(Bomba* bomba)
 
   termicoChanged = termicoOk != bomba->IsTermicoOk;
   contactorChanged = contactorClosed != bomba->IsContactorClosed;
-/*
-#ifdef LOG_ENABLED
-  if (termicoChanged)
-  {
-    Serial.print(F("Termico changed - "));
-    Serial.print(bomba->IsTermicoOk);
-    Serial.print(F(" -> "));
-    Serial.println(termicoOk);
-  }
-#endif
-*/
+  /*
+    #ifdef LOG_ENABLED
+    if (termicoChanged)
+    {
+      Serial.print(F("Termico changed - "));
+      Serial.print(bomba->IsTermicoOk);
+      Serial.print(F(" -> "));
+      Serial.println(termicoOk);
+    }
+    #endif
+  */
   bomba->IsContactorClosed = contactorClosed;
   bomba->IsTermicoOk = termicoOk;
 
@@ -124,13 +124,17 @@ void ReadEnabledBombas()
     if (!bomba1.IsEnabled && !bomba1.RequestEnabled)
     {
       bomba1.RequestEnabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 1: Request Enabled"));
+#endif
     }
 
     if (!bomba2.IsEnabled && !bomba2.RequestEnabled)
     {
       bomba2.RequestEnabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 2: Request Enabled"));
+#endif
     }
   }
   else if (pressed1 && pressed2)
@@ -141,13 +145,17 @@ void ReadEnabledBombas()
     if (bomba1.IsEnabled && !bomba1.RequestDisabled)
     {
       bomba1.RequestDisabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 1: Request Disabled"));
+#endif
     }
 
     if (bomba2.IsEnabled && !bomba2.RequestDisabled)
     {
       bomba2.RequestDisabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 2: Request Disabled"));
+#endif
     }
   }
   else if (pressed1)
@@ -158,13 +166,17 @@ void ReadEnabledBombas()
     if (!bomba1.IsEnabled && !bomba1.RequestEnabled)
     {
       bomba1.RequestEnabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 1: Request Enabled"));
+#endif
     }
 
     if (bomba2.IsEnabled && !bomba2.RequestDisabled)
     {
       bomba2.RequestDisabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 2: Request Disabled"));
+#endif
     }
   }
   else if (pressed2)
@@ -175,12 +187,16 @@ void ReadEnabledBombas()
     if (bomba1.IsEnabled && !bomba1.RequestDisabled)
     {
       bomba1.RequestDisabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 1: Request Disabled"));
+#endif
     }
     if (!bomba2.IsEnabled && !bomba2.RequestEnabled)
     {
       bomba2.RequestEnabled = true;
+#ifdef LOG_ENABLED
       Serial.println(F("Bomba 2: Request Enabled"));
+#endif
     }
   }
 }

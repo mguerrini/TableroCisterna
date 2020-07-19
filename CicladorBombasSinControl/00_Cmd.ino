@@ -106,7 +106,7 @@ void ReadResetAndClearStatisticsButton()
 
     UpdateBombaDisplay(&bomba1);
     UpdateBombaDisplay(&bomba2);
-    
+
     UpdateActiveBombaDisplay();
     UpdateCisternaDisplay();
     UpdateTanqueDisplay();
@@ -179,12 +179,12 @@ void DoPrintStatus()
 
   //Modo
   if (IsAutomaticMode())
-    Serial.println(F("*** MODE: Automatic ***"));
+    Serial.println(F("*** MODO: Automatic ***"));
   else
-    Serial.println(F("*** MODE: Manual ***"));
+    Serial.println(F("*** MODO: Manual ***"));
 
   //Estado del proceso
-  Serial.print(F("Automatic FSM Status: "));
+  Serial.print(F("FSM Status: "));
   PrintStateWorkingFSM(automaticFSM.State);
   Serial.println();
 
@@ -201,7 +201,7 @@ void DoPrintStatus()
   Serial.print(F("Cisterna Empty Start Time: "));
   Serial.println(sensores.CisternaEmptyStartTime);
 
-  Serial.print(F("Cisterna Empty Time (milisegundos): "));
+  Serial.print(F("Cisterna Empty Time (mili): "));
   Serial.println(sensores.CisternaEmptyMillis);
 
   Serial.print(F("Tanque Nivel Minimo: "));
@@ -227,22 +227,22 @@ void DoPrintStatus()
 
   PrintAlarm();
   Serial.println();
-  
+
 }
 
 void PrintView()
 {
   Serial.println(F("*** VIEW ****"));
-  Serial.print(F("Main View Active: "));
+  Serial.print(F("Main View: "));
   PrintTrueOrFalse (view.IsMainViewActive);
 
-  Serial.print(F("Fase View Active: "));
+  Serial.print(F("Fase View: "));
   PrintTrueOrFalse (view.IsErrorFaseViewActive);
 
-  Serial.print(F("Info View Active: "));
+  Serial.print(F("Info View: "));
   PrintTrueOrFalse(view.IsInfoViewActive);
 
-  Serial.print(F("Info View Active View Number: "));
+  Serial.print(F("Info View Number: "));
   Serial.println(view.InfoViewNumberActive);
 }
 
@@ -278,26 +278,26 @@ void PrintBomba(Bomba* bomba)
   Serial.print(F("State: "));
   PrintStateBomba(bomba, true);
 
-  Serial.print(F("Machine Status: "));
+  Serial.print(F("MachineState: "));
   PrintStateBombaFSM(bomba->MachineState);
   Serial.println();
 
-  Serial.print(F("Start Time: "));
+  Serial.print(F("StartTime: "));
   Serial.println(bomba->StartTime);
 
-  Serial.print(F("Refresh Time: "));
+  Serial.print(F("RefreshTime: "));
   Serial.println(bomba->RefreshTime);
 
   Serial.print(F("Uses: "));
   Serial.println(bomba->Uses);
 
-  Serial.print(F("Contactor Error Counter: "));
+  Serial.print(F("ContactorErrorCounter: "));
   Serial.println(bomba->ContactorErrorCounter);
 
-  Serial.print(F("Tiempo de llenado: "));
+  Serial.print(F("Fill Time: "));
   Serial.println(bomba->FillTimeSecondsAverage);
 
-  Serial.print(F("Tiempos de llenado: "));
+  Serial.print(F("Fill Times: "));
   for (int i = 0; i < 9; i++)
   {
     Serial.print(bomba->FillTimeSeconds[i]);
@@ -333,19 +333,19 @@ void PrintStateBomba(Bomba* bomba, bool newLine)
   switch (bomba->State)
   {
     case BOMBA_STATE_ON:
-      Serial.print(F("BOMBA_STATE_ON"));
+      Serial.print(F("ON"));
       break;
     case BOMBA_STATE_OFF:
-      Serial.print(F("BOMBA_STATE_OFF"));
+      Serial.print(F("OFF"));
       break;
     case BOMBA_STATE_ERROR_CONTACTOR_ABIERTO:
-      Serial.print(F("BOMBA_STATE_ERROR_CONTACTOR_ABIERTO"));
+      Serial.print(F("ERROR_CONTACTOR_ABIERTO"));
       break;
     case BOMBA_STATE_ERROR_CONTACTOR_CERRADO:
-      Serial.print(F("BOMBA_STATE_ERROR_CONTACTOR_CERRADO"));
+      Serial.print(F("ERROR_CONTACTOR_CERRADO"));
       break;
     case BOMBA_STATE_ERROR_TERMICO:
-      Serial.print(F("BOMBA_STATE_ERROR_TERMICO"));
+      Serial.print(F("ERROR_TERMICO"));
       break;
   }
 
@@ -359,19 +359,19 @@ void PrintStateBomba(Bomba* bomba, bool newLine)
 
 void convertSeconds2HMS(unsigned long totalSec, int &h, int &m, int &s)
 {
-    s = totalSec % 60;
+  s = totalSec % 60;
 
-    totalSec = (totalSec - s)/60;
-    m = totalSec % 60;
+  totalSec = (totalSec - s) / 60;
+  m = totalSec % 60;
 
-    totalSec = (totalSec - m)/60;
-    h = totalSec;
+  totalSec = (totalSec - m) / 60;
+  h = totalSec;
 }
 
 float mapLocal(float value, float in_min, float in_max, float out_min, float out_max)
 {
   float v = (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-//  float output = round(v);
+  //  float output = round(v);
 
   /*
     Serial.print("Map Value: ");
@@ -409,6 +409,31 @@ unsigned long deltaMillis(unsigned long currRead, unsigned long prevRead)
     return (4294967295 - prevRead) + currRead; //volvio a cero: prevRead -------- maxValue - 0 ------- currRead
 }
 
+byte GetLen(unsigned long value)
+{
+  if (value < 10)
+    return 1;
+  else if (value < 100)
+    return 2;
+  else if (value < 1000)
+    return 3;
+  else if (value < 10000)
+    return 4;
+  else if (value < 100000)
+    return 5;
+  else if (value < 1000000)
+    return 6;
+  else if (value < 10000000)
+    return 7;
+  else if (value < 100000000)
+    return 8;
+  else if (value < 1000000000)
+    return 9;
+  else if (value < 10000000000)
+    return 10;
+  else
+    return 11;
+}
 
 // *************************************************** //
 //                    READ EEPROM

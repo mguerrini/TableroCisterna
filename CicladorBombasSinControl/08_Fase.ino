@@ -1,5 +1,3 @@
-#include <EEPROM.h>
-
 // ****************************************************************** //
 //                          SETUP
 // ****************************************************************** //
@@ -35,6 +33,7 @@ void SetupFase()
   fase3.InputVoltsReference = voltRef;
   fase3.ConversionFactor = cal;
 
+#ifdef LOG_ENABLED
   Serial.print(F("   Fase 1 - Tension de referencia: "));
   Serial.print(fase1.InputVoltsReference);
   Serial.print(F(", Valor de calibración: "));
@@ -49,7 +48,7 @@ void SetupFase()
   Serial.print(fase3.InputVoltsReference);
   Serial.print(F(", Valor de calibración: "));
   Serial.println(fase3.ConversionFactor);
-
+#endif
 #endif
 
 #ifndef FASE1_ENABLED
@@ -193,12 +192,12 @@ void updateFaseValues(Fase * fase, unsigned long readTime, float volts)
 
     fase->Voltage = value;
     fase->IsOk = fase->Voltage > FASE_MIN_VOLTAGE;
-/*
-        Serial.print(F("Voltage: "));
-        Serial.print(fase->Voltage);
-        Serial.print(F(" IsOk: "));
-        Serial.println(fase->IsOk);
-*/    
+    /*
+            Serial.print(F("Voltage: "));
+            Serial.print(fase->Voltage);
+            Serial.print(F(" IsOk: "));
+            Serial.println(fase->IsOk);
+    */
     //reseteo
     fase->ReadCount = 0;
     fase->ReadTotal = 0;
