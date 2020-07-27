@@ -211,10 +211,16 @@ void ResetBomba(Bomba* bomba)
   bomba->IsEnabled = true;
   bomba->State = BOMBA_STATE_OFF; //0=OFF 1=ON -1=ERROR CONTACTOR ABIERTO -2=ERROR CONTACTOR CERRADO -3=ERROR TERMICO -3=ERROR BOMBA (ESTE NO ESTA EN FUNCIONAMIENTO TODAVIA, FALTARIA UN SENSOR EN LA BOMBA QUE DETECTE FUNCIONAMIENTO)
   bomba->Uses = 0;
-  bomba->MachineState = FSM_BOMBA_OFF;
   bomba->FromMachineState = FSM_BOMBA_OFF;
+  bomba->MachineState = FSM_BOMBA_OFF;
+  bomba->NextMachineState = FSM_BOMBA_NULL;
+
   bomba->IsTermicoOk = true;
   bomba->IsContactorClosed = false;
+  bomba->RequestOn = false;
+  bomba->RequestOff = false;
+  bomba->RequestEnabled = false;
+  bomba->RequestDisabled = false;
 }
 
 void ActivateBomba(Bomba* bomba, boolean updateView)
@@ -283,14 +289,16 @@ Bomba* SwapAndActiveBomba()
 
 void CleanFillTimes()
 {
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < BOMBA_FILLTIMES_READ_MAX; i++)
   {
     bomba1.FillTimeSeconds[i] = 0;
     bomba2.FillTimeSeconds[i] = 0;
-
-    bomba1.FillTimeSecondsAverage = 0;
-    bomba1.FillTimeSecondsAverage = 0;
   }
+  
+  bomba1.FillTimeSecondsAverage = 0;
+  bomba2.FillTimeSecondsAverage = 0;
+  bomba1.FillTimeSecondsMaximum = 0;
+  bomba2.FillTimeSecondsMaximum = 0;
 }
 
 

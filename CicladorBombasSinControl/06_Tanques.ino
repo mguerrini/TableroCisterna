@@ -33,9 +33,9 @@ void ReadCisternaSensors()
 
 #ifdef LOG_ENABLED
     if (sensores.IsCisternaSensorMinVal)
-      Serial.println(F("Cisterna: Vacia."));
+      Serial.println(F("Cisterna: Vacia"));
     else
-      Serial.println(F("Cisterna: Normal."));
+      Serial.println(F("Cisterna: Normal"));
 #endif
     
   }
@@ -73,9 +73,9 @@ void ReadTanqueSensors()
 
 #ifdef LOG_ENABLED
     if (full)
-      Serial.println(F("Tanque: Lleno."));
+      Serial.println(F("Tanque: Lleno"));
     else
-      Serial.println(F("Tanque: Vacío."));
+      Serial.println(F("Tanque: Vacío"));
 #endif      
   }
 }

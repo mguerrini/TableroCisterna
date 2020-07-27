@@ -5,24 +5,30 @@
 void CicladorLoop()
 {
   Bomba* bomba = GetActiveBomba();
-  automaticFSM.NextState = AUTO_NULL;
   automaticFSM.Message = 0;
-
-  //  PrintEnterStateWorkingFSM();
-
-  //ejecuto el estado correspondiente
-  ExecuteAutoState(bomba);
-
-  //  PrintExitStateWorkingFSM();
-  PrintStateAutoFSM();
 
   automaticFSM.FromState = automaticFSM.State;
   if (automaticFSM.NextState != AUTO_NULL)
     automaticFSM.State = automaticFSM.NextState;
 
+  automaticFSM.NextState = AUTO_NULL;
+
+  //ejecuto el estado correspondiente
+  ExecuteAutoState(bomba);
+
   //ejecuto la maquina de estados de las bombas
   BombaStateMachine(&bomba1);
   BombaStateMachine(&bomba2);
+
+#ifdef LOG_ENABLED
+  if (CanPrintStateAutoFSM() || CanPrintStateBombaFSM(&bomba1) || CanPrintStateBombaFSM(&bomba2))
+  {
+    PrintStateAutoFSM();
+    PrintStateBombaFSM(&bomba1);
+    PrintStateBombaFSM(&bomba2);
+    Serial.println();
+  }
+#endif
 }
 
 
@@ -41,7 +47,6 @@ void ExecuteAutoState(Bomba* bomba)
     //sino esta ok la fase....no arranca el sistema. Deberia volver a idle porque los motores se apagaron
     if (!automaticFSM.IsFaseOk)
     {
-      automaticFSM.Message = MSG_AUTO_ERROR_FASE;
       return;
     }
 
@@ -111,13 +116,13 @@ void ExecuteAutoState(Bomba* bomba)
     if (IsFirstTimeInAutoState())
     {
       bomba->RequestOn = true;
-      automaticFSM.Message = MSG_AUTO_FIRST_TIME_REQUEST_ON;
+      automaticFSM.Message = MSG_AUTO_BOMBA_OFF_REQUEST_ON;
       return;
     }
 
     //intento encenderla...hasta que tire error por timeout o termico o arranqe
     bomba->RequestOn = true;
-    automaticFSM.Message = MSG_AUTO_BOMBA_OFF_REQUEST_ON;
+    //automaticFSM.Message = MSG_AUTO_BOMBA_OFF_REQUEST_ON;
     return;
   }
 
@@ -164,21 +169,25 @@ void ExecuteAutoState(Bomba* bomba)
     if (CanTurnOffBomba()) // == sensores.IsTanqueSensorMaxVal || sensores.IsCisternaSensorMinVal || IsBombaOff(bomba))
     {
 #ifdef LOG_ENABLED
-      if (sensores.IsTanqueSensorMaxVal)
-      {
-        if (sensores.IsCisternaSensorMinVal)
-        {
-          automaticFSM.Message = MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_VACIA;
-        }
-        else
-        {
-          automaticFSM.Message = MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_NORMAL;
-        }
-      }
-      else
-      {
-        automaticFSM.Message = MSG_AUTO_CISTERNA_EMPTY;
-      }
+      /*
+            if (sensores.IsTanqueSensorMaxVal)
+            {
+              if (sensores.IsCisternaSensorMinVal)
+                //          automaticFSM.Message = MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_VACIA;
+                PrintAutoMessage(MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_VACIA);
+              else
+                //          automaticFSM.Message = MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_NORMAL;
+                PrintAutoMessage(MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_NORMAL);
+            }
+            else
+            {
+              PrintAutoMessage(MSG_AUTO_CISTERNA_EMPTY);
+
+              //automaticFSM.Message = MSG_AUTO_CISTERNA_EMPTY;
+            }
+
+            Serial.println();
+      */
 #endif
       return;
     }
@@ -211,7 +220,7 @@ void ExecuteAutoState(Bomba* bomba)
     {
       // BOMBA OFF => Tengo que actualizar los contadores
       bomba->Uses = bomba->Uses + 1;
-      if (bomba->Uses >= BOMBA_USES_MAX)
+      if (bomba->Uses >= automaticFSM.CiclosMax)
       {
         automaticFSM.NextState = AUTO_CHANGE_BOMBA;
         automaticFSM.Message = MSG_AUTO_CHANGE_BOMBA_USOS_MAXIMO_ALACANZADO;
@@ -246,7 +255,8 @@ void ExecuteAutoState(Bomba* bomba)
       else
       {
         bomba->RequestOff = true;
-        automaticFSM.Message = MSG_AUTO_WAITING_APERTURA_CONTACTOR;
+        //PrintAutoMessage(MSG_AUTO_WAITING_APERTURA_CONTACTOR, true);
+        //automaticFSM.Message = MSG_AUTO_WAITING_APERTURA_CONTACTOR;
       }
     }
     return;
@@ -353,6 +363,9 @@ void ExecuteAutoState(Bomba* bomba)
   {
     //no registro error....trato de switchear bomba
 
+    //no registro el tiempo de funcionamiento
+    Statistics_BombaOff(bomba, false);
+
     //deberia poner la bomba en estado de timeout de llenado
     automaticFSM.NextState = AUTO_CHANGE_BOMBA;
     automaticFSM.Message = MSG_AUTO_ERROR_FILL_TIMEOUT;
@@ -409,6 +422,43 @@ void ExecuteAutoState(Bomba* bomba)
 // *************************************************** //
 //                FUNCIONES AUXLIARES
 // *************************************************** //
+void SetupAutoFSM()
+{
+  automaticFSM.IsFaseOk = true;
+  automaticFSM.FromState = AUTO_IDLE;
+  automaticFSM.State = AUTO_IDLE;
+  automaticFSM.NextState = AUTO_NULL;
+
+#ifdef EEPROM_ENABLED
+  byte bAux;
+  EEPROM.get(BOMBA_CICLOS_MAX_ADDR, bAux);
+  automaticFSM.CiclosMax = bAux;
+#else
+  automaticFSM.CiclosMax = BOMBA_USES_MAX;
+#endif
+
+#ifdef LOG_ENABLED
+  Serial.print(F("CiclosMax: "));
+  Serial.println(automaticFSM.CiclosMax);
+#endif
+}
+
+void SetCiclos(String ciclosStr)
+{
+  ciclosStr.trim();
+  int iCiclos =  ciclosStr.toInt();
+
+  if (iCiclos <= 0 || iCiclos > 50)
+  {
+    Serial.println(F("La cantidad de ciclos no puede ser menor a 0 ni mayor a 50."));
+    return;
+  }
+
+  byte ciclos = (byte) iCiclos;
+  EEPROM.put(BOMBA_CICLOS_MAX_ADDR, ciclos);
+
+  automaticFSM.CiclosMax = ciclos;
+}
 
 bool IsFirstTimeInAutoState()
 {
@@ -472,71 +522,33 @@ Bomba* GetActiveBomba()
 //                       PRINT
 // *************************************************** //
 
+boolean CanPrintStateAutoFSM()
+{
+#ifdef LOG_ENABLED
+
+#ifdef LOG_MIN_ENABLED
+  return automaticFSM.FromState != automaticFSM.State ||
+         (automaticFSM.State != automaticFSM.NextState && automaticFSM.NextState != AUTO_NULL) ||
+         automaticFSM.Message != 0;
+#else
+  return true;
+#endif
+
+#else
+  return false;
+#endif
+}
+
 void PrintStateAutoFSM()
 {
 #ifdef LOG_ENABLED
-#ifdef LOG_MIN_ENABLED
-  if (automaticFSM.FromState != automaticFSM.State ||
-      (automaticFSM.State != automaticFSM.NextState && automaticFSM.NextState != AUTO_NULL) ||
-      automaticFSM.Message != 0)
-  {
-#endif
-    Serial.print(F("Process: "));
-    //Estado actual
-    PrintStateWorkingFSM(automaticFSM.State);
-
-    //mensaje
-    PrintAutoMessage();
-
-    byte state = automaticFSM.State;
-
-    if (automaticFSM.NextState != AUTO_NULL)
-      state = automaticFSM.NextState;
-
-    Serial.print(F(" -> "));
-    PrintStateWorkingFSM(state);
-    Serial.println();
-#ifdef LOG_MIN_ENABLED
-  }
-#endif
-#endif
-}
-/*
-  void PrintEnterStateWorkingFSM()
-  {
-  #ifdef LOG_ENABLED
-  #ifdef LOG_MIN_ENABLED
-  if (automaticFSM.FromState != automaticFSM.State)
-  {
-    Serial.print(F("Process: "));
-    PrintStateWorkingFSM(automaticFSM.State);
-    return;
-  }
-  #else
   Serial.print(F("Process: "));
+  //Estado actual
   PrintStateWorkingFSM(automaticFSM.State);
-  #endif
 
-  #endif
-  }
+  //mensaje
+  PrintAutoMessage(automaticFSM.Message);
 
-
-  void PrintExitStateWorkingFSM()
-  {
-  #ifdef LOG_ENABLED
-  #ifdef LOG_MIN_ENABLED
-  if (automaticFSM.NextState != AUTO_NULL && automaticFSM.State != automaticFSM.NextState)
-  {
-    byte state = automaticFSM.State;
-
-    if (automaticFSM.NextState != AUTO_NULL)
-      state = automaticFSM.NextState;
-
-    Serial.print(F(" -> "));
-    PrintStateWorkingFSM(state);
-    Serial.println();
-  }
-  #else
   byte state = automaticFSM.State;
 
   if (automaticFSM.NextState != AUTO_NULL)
@@ -545,34 +557,9 @@ void PrintStateAutoFSM()
   Serial.print(F(" -> "));
   PrintStateWorkingFSM(state);
   Serial.println();
-  #endif
-  #endif
-  }
+#endif
+}
 
-  void PrintWorkingFSMMessage(const __FlashStringHelper* msg)
-  {
-  #ifdef LOG_ENABLED
-  Serial.print(F(" ("));
-  Serial.print(msg);
-  Serial.print(F(")"));
-  #endif
-
-  }
-
-
-  void PrintWorkingFSMMessage(const __FlashStringHelper* msg, long wait, long maximo)
-  {
-  #ifdef LOG_ENABLED
-  Serial.print(F(" ("));
-  Serial.print(msg);
-  Serial.print(F(" wait: "));
-  Serial.print(wait);
-  Serial.print(F(" Max: "));
-  Serial.print(maximo);
-  Serial.print(F(")"));
-  #endif
-  }
-*/
 void PrintStateWorkingFSM(byte current)
 {
   switch (current)
@@ -607,43 +594,37 @@ void PrintStateWorkingFSM(byte current)
   }
 }
 
-void PrintAutoMessage()
+void PrintAutoMessage(byte number)
 {
 #ifdef LOG_ENABLED
-  byte number = automaticFSM.Message;
-
   if (number == 0)
     return;
 
   Serial.print(F(" ("));
   switch (number)
   {
-    case MSG_AUTO_ERROR_FASE:
-      Serial.print(F("Error en fase"));
-      break;
-
     case MSG_AUTO_ERROR_SENSORES:
-      Serial.print(F("Error en sensores del tanque"));
+      Serial.print(F("Error sensores tanque"));
       break;
 
     case MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_VACIA:
-      Serial.print(F("Sensores Error - Tanque: Lleno, Cisterna: Vacia"));
+      Serial.print(F("Error Sensores - Tanque: Lleno, Cisterna: Vacia"));
       break;
 
     case MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_NORMAL:
-      Serial.print(F("Sensores Error - Tanque: Lleno, Cisterna: Normal"));
+      Serial.print(F("Error Sensores - Tanque: Lleno, Cisterna: Normal"));
       break;
 
     case MSG_AUTO_ERROR_STOPPING_BOMBA_TIMEOUT:
-      Serial.print(F("Timeout Stopping - Bomba On"));
+      Serial.print(F("Stop Timeout - Bomba On"));
       break;
 
     case MSG_AUTO_ERROR_NOT_AVAILABLES_BOMBAS:
-      Serial.print(F("Sin Bombas disponibles"));
+      Serial.print(F("No Bombas disponibles"));
       break;
 
     case MSG_AUTO_ERROR_FILL_TIMEOUT:
-      Serial.print(F("Bomba Activa Fill Timeout"));
+      Serial.print(F("Fill Timeout"));
       break;
 
     case MSG_AUTO_ERROR_BOMBA_ON_START_ALARMA:
@@ -651,15 +632,15 @@ void PrintAutoMessage()
       break;
 
     case MSG_AUTO_BOMBA_ON:
-      Serial.print(F("Bomba Encendida"));
+      Serial.print(F("Bomba ON"));
       break;
 
     case MSG_AUTO_BOMBA_OFF_REQUEST_ON:
-      Serial.print(F("Bomba Off - Request On"));
+      Serial.print(F("Bomba OFF - Req On"));
       break;
 
     case MSG_AUTO_BOMBA_OFF:
-      Serial.print(F("Bomba Apagada"));
+      Serial.print(F("Bomba OFF"));
       break;
 
     case MSG_AUTO_TANQUE_VACIO:
@@ -671,26 +652,22 @@ void PrintAutoMessage()
       break;
 
     case MSG_AUTO_TANQUE_VACIO_CISTERNA_NORMAL:
-      Serial.print(F("Tanque Empty - Cisterna Normal - Bomba On"));
+      Serial.print(F("Tanque Vacio - Cisterna Normal - Bomba ON"));
       break;
 
     case MSG_AUTO_CHANGE_BOMBA_USOS_MAXIMO_ALACANZADO:
-      Serial.print(F("Usos máximo alcanzado->cambio de bomba"));
+      Serial.print(F("Usos máx alcanzado->cambio de bomba"));
       break;
 
     case MSG_AUTO_BOMBA_ACTIVA_NO_DISPONIBLE:
-      Serial.print(F("Bomba Activa no disponible"));
+      Serial.print(F("B Activa no disponible"));
       break;
     case MSG_AUTO_BOMBA_ACTIVA_FILL_TIMEOUT:
-      Serial.print(F("Bomba Activa Fill Timeout"));
-      break;
-
-    case MSG_AUTO_FIRST_TIME_REQUEST_ON:
-      Serial.print(F("First Time - Request On"));
+      Serial.print(F("B Activa Fill Timeout"));
       break;
 
     case MSG_AUTO_REQUEST_OFF:
-      Serial.print(F("Request Off"));
+      Serial.print(F("Req Off"));
       break;
 
     case MSG_AUTO_WAITING_APERTURA_CONTACTOR:
@@ -701,11 +678,11 @@ void PrintAutoMessage()
       Serial.print(F("Start Alarma"));
       break;
     case MSG_AUTO_B1_DISPONIBLE_STOP_ALARMA:
-      Serial.print(F("Bomba 1 disponible-Stop Alarma"));
+      Serial.print(F("B1 disponible-Stop Alarma"));
       break;
 
     case MSG_AUTO_B2_DISPONIBLE_STOP_ALARMA:
-      Serial.print(F("Bomba 2 disponible-Stop Alarma"));
+      Serial.print(F("B2 disponible-Stop Alarma"));
       break;
 
     case MSG_AUTO_B1_ACTIVA:
@@ -717,15 +694,15 @@ void PrintAutoMessage()
       break;
 
     case MSG_AUTO_BOMBA_ACTIVA_DISABLED:
-      Serial.print(F("Bomba Activa Deshabilitada"));
+      Serial.print(F("B Activa Deshabilitada"));
       break;
 
     case MSG_AUTO_BOMBA_ACTIVA_ERROR:
-      Serial.print(F("Bomba Activa en Error"));
+      Serial.print(F("B Activa en Error"));
       break;
 
     case MSG_AUTO_BOMBA_ACTIVA_OK:
-      Serial.print(F("Bomba Activa Normalizada"));
+      Serial.print(F("B Activa Normalizada"));
       break;
   }
 

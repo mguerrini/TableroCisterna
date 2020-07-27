@@ -1,19 +1,21 @@
 #include <EEPROM.h>
 
+
 #define LOG_ENABLED
 #ifdef LOG_ENABLED
-//#define LOG_MIN_ENABLED
+#define LOG_MIN_ENABLED
 #endif
 
 //DISPLAYS
 #define DISPLAY_20x4_I2C
 
 // --- DEBUG ---
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
   #define DEBUG_CONTINUE_PIN A3
 #endif
 
+#define MODO_OUTPUT_VIEW_ENABLED //Muestra el modo en la pantalla
 
 //funciones con referencias
 boolean IsButtonPressed(int pin, boolean &state, boolean &isPressed, unsigned long &startTime);
@@ -22,9 +24,12 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 // ****************************************************************** //
 //                        EEPROM MEMORY MAP
 // ****************************************************************** //
-//INT : 2 BYTES
-//LONG: 4 BYTES
-//FLOAT: 4 BYTES
+#define EEPROM_ENABLED
+
+//BYTE : 1 byte
+//INT  : 2 byte
+//LONG : 4 byte
+//FLOAT: 4 byte
 #define FASE1_TENSION_ENTRADA_ADDR 0 //float
 #define FASE2_TENSION_ENTRADA_ADDR 4 //float
 #define FASE3_TENSION_ENTRADA_ADDR 8 //float
@@ -35,19 +40,21 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 #define BOMBA1_USES_ADDR 20 //unsigned long
-#define BOMBA1_TOTAL_MINUTES_ADDR 24 //unsigned long
+#define BOMBA1_TOTAL_SECONDS_ADDR 24 //unsigned long
 #define BOMBA1_ERROR_TERMICO_COUNT_ADDR 28 //unsigned long
-#define BOMBA1_FILLING_TIME_MINUTES_ADDR 32 //unsigned int
+#define BOMBA1_FILLING_TIME_SECONDS_AVG_ADDR 32 //unsigned long
+#define BOMBA1_FILLING_TIME_SECONDS_MAX_ADDR 36 //unsigned long
 
 #define BOMBA2_USES_ADDR 40 //unsigned long
-#define BOMBA2_TOTAL_MINUTES_ADDR 44 //unsigned long
+#define BOMBA2_TOTAL_SECONDS_ADDR 44 //unsigned long
 #define BOMBA2_ERROR_TERMICO_COUNT_ADDR 48 //unsigned long
-#define BOMBA2_FILLING_TIME_MINUTES_ADDR 52 //unsigned int
+#define BOMBA2_FILLING_TIME_SECONDS_AVG_ADDR 52 //unsigned long
+#define BOMBA2_FILLING_TIME_SECONDS_MAX_ADDR 56 //unsigned long
 
-#define ERROR_FASE_TOTAL_MINUTES_ADDR 60 //unsigned long
+#define ERROR_FASE_TOTAL_SECONDS_ADDR 60 //unsigned long
 #define ERROR_FASE_COUNT_ADDR 64 //unsigned long
 
-
+#define BOMBA_CICLOS_MAX_ADDR 70 //unsigned long
 // ****************************************************************** //
 //                        CONFIGURACIONES
 // ****************************************************************** //
@@ -60,7 +67,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== INFO VIEW ====================
 
-#define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
+#define INFO_VIEW_VISIBLE_TIME 5000 //10 SEGUNDOS
 #define VIEW_INFO_PIN A0 //Muestra información estadisticas y valores varios
 
 // ====================== INVERSOR ======================
@@ -79,10 +86,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 // ====================== FASES ======================
-//tension de entrada
-#define FASE_FROM_EEPROM_ENABLED // indica que se debe leer los valores almacenados en la EEPROM y no los valores constantes
-
-//#define FASE1_ENABLED
+//#define FASE1_ENABLED //si no esta definido, asigna los valores por defeto en vez de leer la eeprom y los valores inputs
 #define FASE1_INPUT_PIN A3
 
 //#define FASE2_ENABLED
@@ -114,7 +118,6 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define CHANGE_MODE_BTN_PIN A2 //selector Manual / Automatico
 #define IS_CHANGE_MODE_PULSADOR true //tipo de boton, pulsador o llave
 
-#define MODO_OUTPUT_VIEW_ENABLED //Muestra el modo en la pantalla
 
 // ====================== BOMBAS ======================
 // --- PINES ---
@@ -132,7 +135,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA1 1
 #define BOMBA2 2
 
-#define BOMBA_USES_MAX 1
+#define BOMBA_USES_MAX 1 //cantidad de usos seguidos por default. Si no se setea se usa este valor
 #define BOMBA_TURNING_ON_TIME 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
 #define BOMBA_TURNING_OFF_TIME 5000 //tiempo que espera hasta que el contactor avise que se abrio.
 
@@ -141,6 +144,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 #define BOMBA_FILL_TIME_HOURS_MAX 6//Tiempo de llenado inicial del tanque en horas. Un numero grande para que no se corte antes de tiempo
 #define BOMBA_REFRESH_WORKING_TIME 1000 //Tiempo entre refrescos de tiempo de trabajo de las bombas (milisegundos)
+#define BOMBA_FILLTIMES_READ_MAX 2 //Cantidad maxima de lecturas de llenado para sacar el promedio
 
 // ====================== CISTERNA/TANQUE ======================
 // --- CISTERNA ---
@@ -154,9 +158,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 // ====================== ESTADISTICAS ======================
-#define STATISTICS_TIME_TO_SAVE 43200000 //(24 / 2) * (60 * 60 * 1000) 2 veces por dia. Valor expresado en milisegundos
+#define STATISTICS_TIME_TO_SAVE 300000 //43200000 = (24 / 2) * (60 * 60 * 1000) 2 veces por dia. Valor expresado en milisegundos
 #define CLEAN_STADISTICS_PRESS_TIME 5000 //10 segundos - tiempo (milisegundos) que se tiene que tener presionado el boton reset para limpiar las estadisticas
-//#define STATISTICS_SAVE_ENABLED
 
 
 // ****************************************************************** //
@@ -221,8 +224,9 @@ typedef struct  {
   byte MachineState;
   byte NextMachineState;
 
-  unsigned long FillTimeSeconds[10];
+  unsigned long FillTimeSeconds[BOMBA_FILLTIMES_READ_MAX];
   unsigned long FillTimeSecondsAverage;
+  unsigned long FillTimeSecondsMaximum;
 
   unsigned long StartTime;
   unsigned long RefreshTime;
@@ -303,6 +307,7 @@ typedef struct {
 
   boolean IsFaseOk;
   unsigned long StoppingTimer;
+  byte CiclosMax;
 
   byte Message;
 } AutoFSM;
@@ -349,43 +354,40 @@ void setup() {
   automaticFSM.Mode = AUTO;
 
   SetupPins();
-  Serial.println(F("Pins - Ready"));
+  //Serial.println(F("Pins - Ready"));
 
   SetupLevelSensors();
-  Serial.println(F("Level Sensors - Ready"));
+  //Serial.println(F("Level Sensors - Ready"));
 
   SetupBombaSensors();
-  Serial.println(F("Bombas Sensors - Ready"));
+  //Serial.println(F("Bombas Sensors - Ready"));
 
   SetupBombas();
-  Serial.println(F("Bombas - Ready"));
+  //Serial.println(F("Bombas - Ready"));
 
   SetupAlarm();
-  Serial.println(F("Alarm - Ready"));
+  //Serial.println(F("Alarm - Ready"));
 
   SetupMode();
-  Serial.println(F("Mode - Ready"));
+  //Serial.println(F("Mode - Ready"));
 
   SetupFase();
-  Serial.println(F("Fases Sensor - Ready"));
+  //Serial.println(F("Fases Sensor - Ready"));
 
   SetupCommands();
-  Serial.println(F("Commands - Ready"));
+  //Serial.println(F("Commands - Ready"));
 
   SetupStatistics();
-  Serial.println(F("Statistics - Ready"));
+  //Serial.println(F("Statistics - Ready"));
 
-  automaticFSM.IsFaseOk = true;
-  automaticFSM.FromState = AUTO_IDLE;
-  automaticFSM.State = AUTO_IDLE;
-  automaticFSM.NextState = AUTO_NULL;
-  Serial.println(F("Main FSM  - Ready"));
+  SetupAutoFSM();
+  //Serial.println(F("Main FSM  - Ready"));
 
   // put your setup code here, to run once:
   SetupDisplay();
-  Serial.println(F("Display - Ready"));
+  //Serial.println(F("Display - Ready"));
 
-  Serial.println(F("Process - Ready"));
+  Serial.println(F("Ready"));
 }
 
 
@@ -480,12 +482,15 @@ void SetupPins()
 #ifdef FASE1_ENABLED
   pinMode(FASE1_INPUT_PIN, INPUT);
 #endif
-#ifdef FASE1_ENABLED
+
+#ifdef FASE2_ENABLED
   pinMode(FASE2_INPUT_PIN, INPUT);
 #endif
-#ifdef FASE1_ENABLED
+
+#ifdef FASE3_ENABLED
   pinMode(FASE3_INPUT_PIN, INPUT);
 #endif
+
   pinMode(FASE_OUTPUT_PIN, OUTPUT);
 
   // --- SENSORES BOMBAS ---
@@ -520,7 +525,6 @@ void SetupPins()
 //************************************************//
 // ============ MENSAJES DEBUG AUTO ============ //
 
-#define MSG_AUTO_ERROR_FASE 1
 #define MSG_AUTO_ERROR_SENSORES 2
 
 #define MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_VACIA 3
@@ -587,3 +591,4 @@ void SetupPins()
 #define MSG_BOMBA_ENABLING 18
 
 #define MSG_BOMBA_ERROR_TERMICO_START_ALARM 19
+#define MSG_BOMBA_CONTACTOR_RESET 20

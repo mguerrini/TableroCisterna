@@ -205,9 +205,25 @@ void ShowNextInfoView()
     case 5:
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print(F("**** Generales  ****"));
+      lcd.print(F("** Falta de Fase ***"));
+
       lcd.setCursor(0, 1);
-      lcd.print(F("Bomba seleccionada: "));
+      lcd.print(F("Cantidad:"));
+      len = GetLen(statistics.ErrorFaseCount);
+      lcd.setCursor(20 - len, 1);
+      lcd.print(statistics.ErrorFaseCount);
+
+      lcd.setCursor(0, 2);
+      lcd.print(F("Tiempo:"));
+      PrintTimeFromSeconds(statistics.ErrorFaseTotalSeconds, 2);
+      return;
+
+    case 6:
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(F("**** Generales *****"));
+      lcd.setCursor(0, 1);
+      lcd.print(F("Bomba seleccionada:"));
       lcd.setCursor(19, 1);
       if (bomba1.IsActive)
         lcd.print(BOMBA1);
@@ -215,7 +231,7 @@ void ShowNextInfoView()
         lcd.print(BOMBA2);
 
       lcd.setCursor(0, 2);
-      lcd.print(F("Ciclos seguidos:    "));
+      lcd.print(F("Ciclos seguidos:"));
       uses = bomba1.Uses;
       if (bomba2.IsActive)
         uses  = bomba2.Uses;
@@ -223,22 +239,6 @@ void ShowNextInfoView()
       lcd.setCursor(20 - len, 2);
       lcd.print(uses);
 
-      return;
-
-    case 6:
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print(F("** Falta de Fase  **"));
-
-      lcd.setCursor(0, 1);
-      lcd.print(F("Cantidad:           "));
-      len = GetLen(statistics.ErrorFaseCount);
-      lcd.setCursor(20 - len, 1);
-      lcd.print(statistics.ErrorFaseCount);
-
-      lcd.setCursor(0, 2);
-      lcd.print(F("Tiempo:             "));
-      PrintTimeFromSeconds(statistics.ErrorFaseTotalSeconds, 2);
       return;
   }
 
@@ -253,10 +253,10 @@ void PrintBombaView1(Bomba* bomba)
   lcd.setCursor(0, 0);
   lcd.print(F("***** Bomba "));
   lcd.print(number);
-  lcd.print(F("  *****"));
+  lcd.print(F(" ******"));
 
   lcd.setCursor(0, 1);
-  lcd.print(F("# Usos:             "));
+  lcd.print(F("# Usos:"));
   int n = statistics.Bomba1Uses;
   if (number == BOMBA2)
     n = statistics.Bomba2Uses;
@@ -266,14 +266,14 @@ void PrintBombaView1(Bomba* bomba)
   lcd.print(n);
 
   lcd.setCursor(0, 2);
-  lcd.print(F("Tiempo ON:          "));
+  lcd.print(F("Tiempo ON:"));
   if (number == BOMBA1)
     PrintTimeFromSeconds(statistics.Bomba1TotalSeconds, 2);
   else
     PrintTimeFromSeconds(statistics.Bomba2TotalSeconds, 2);
 
   lcd.setCursor(0, 3);
-  lcd.print(F("Llenado:            "));
+  lcd.print(F("Llenado:"));
   PrintTimeFromSeconds(bomba->FillTimeSecondsAverage, 3);
 }
 
@@ -344,7 +344,7 @@ void ShowMainView()
 
 void UpdateBombaDisplay(Bomba* bomba)
 {
-  if (!view.IsMainViewActive)
+  if (view.IsInfoViewActive || view.IsErrorFaseViewActive)
     return;
 
   int row = 0;
@@ -377,6 +377,9 @@ void UpdateBombaDisplay(Bomba* bomba)
 
 void UpdateBombaWorkingTime(Bomba* bomba)
 {
+  if (view.IsInfoViewActive || view.IsErrorFaseViewActive)
+    return;
+
   unsigned long totalSec = GetBombaWorkingTimeInSeconds(bomba);
 
   static int h = 0;
@@ -391,8 +394,8 @@ void UpdateBombaWorkingTime(Bomba* bomba)
 }
 
 /*
-void PrintTimeFromMinutes(unsigned long totalMin, int row)
-{
+  void PrintTimeFromMinutes(unsigned long totalMin, int row)
+  {
   int h = -1;
   int m = -1;
   int s = -1;
@@ -402,7 +405,7 @@ void PrintTimeFromMinutes(unsigned long totalMin, int row)
 
   unsigned long secs = totalMin * 60;
   UpdateTime(secs, row, h, m, s);
-}
+  }
 */
 
 void PrintTimeFromSeconds(unsigned long totalSec, int row)
@@ -428,9 +431,18 @@ void UpdateTime(unsigned long totalSec, int row, int &h, int &m, int &s)
 
   if (h != lastH)
   {
-    lcd.setCursor(12, row);
-    if (h < 10)
-      lcd.print(F("0"));
+    if (h < 100)
+    {
+      lcd.setCursor(12, row);
+      if (h < 10)
+        lcd.print(F("0"));
+    }
+    else if (h < 1000)
+      lcd.setCursor(11, row);
+    else if (h < 10000)
+      lcd.setCursor(10, row);
+    else if (h < 100000)
+      lcd.setCursor(9, row);
 
     lcd.print(h);
   }
@@ -457,7 +469,7 @@ void UpdateTime(unsigned long totalSec, int row, int &h, int &m, int &s)
 
 void UpdateCisternaDisplay()
 {
-  if (!view.IsMainViewActive)
+  if (view.IsInfoViewActive || view.IsErrorFaseViewActive)
     return;
 
   lcd.setCursor(9, 3);
@@ -470,7 +482,7 @@ void UpdateCisternaDisplay()
 
 void UpdateTanqueDisplay()
 {
-  if (!view.IsMainViewActive)
+  if (view.IsInfoViewActive || view.IsErrorFaseViewActive)
     return;
 
   lcd.setCursor(7, 2);
@@ -504,7 +516,7 @@ void UpdateDisplayMode()
 
 void UpdateActiveBombaDisplay()
 {
-  if (!view.IsMainViewActive)
+  if (view.IsInfoViewActive || view.IsErrorFaseViewActive)
     return;
 
   if (bomba1.IsActive)
@@ -533,7 +545,7 @@ void UpdateActiveBombaDisplay()
 
 void PrintInitialText()
 {
-  if (!view.IsMainViewActive)
+  if (view.IsInfoViewActive || view.IsErrorFaseViewActive)
     return;
 
   lcd.setCursor(0, 0);

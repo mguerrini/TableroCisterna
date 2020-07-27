@@ -17,37 +17,52 @@ void ReadCommands()
     if (cmd.length() == 0)
       return;
 
+    cmd.toUpperCase();
+
     //"CAL_FASE_1 180" = CALIBRACION DE FASE 1, EL VALOR DE TENSION INGRESADO DE REFERENCIA ES 180 VOLTS.
 
-    if (cmd.startsWith("CAL_FASE_1"))
+    if (cmd.startsWith("CAL F1"))
     {
-      calibrateFase(FASE1_INPUT_PIN, 1, cmd.substring(10));
+      CalibrateFase(FASE1_INPUT_PIN, 1, cmd.substring(6));
     }
-    else if (cmd.startsWith("CAL_FASE_2"))
+    else if (cmd.startsWith("CAL F2"))
     {
-      calibrateFase(FASE2_INPUT_PIN, 2, cmd.substring(10));
+      CalibrateFase(FASE2_INPUT_PIN, 2, cmd.substring(6));
     }
-    else if (cmd.startsWith("CAL_FASE_3"))
+    else if (cmd.startsWith("CAL F3"))
     {
-      calibrateFase(FASE3_INPUT_PIN, 3, cmd.substring(10));
+      CalibrateFase(FASE3_INPUT_PIN, 3, cmd.substring(6));
     }
-    else if (cmd == "DEL_FILL_DATA")
+    else if (cmd.startsWith("SET CICLOS"))
+    {
+      SetCiclos(cmd.substring(10));
+      Serial.println(F("Ciclos modificados"));
+    }
+    else if (cmd.startsWith("CICLOS"))
+    {
+      Serial.print(F("Ciclos Maximo: "));
+      Serial.println(automaticFSM.CiclosMax);
+    }
+    else if (cmd == "DEL FILLTIME")
     {
       //ELIMINA LOS VALORES DE TIEMPO DE LLENADO DEL TAMQUE
       CleanFillTimes();
-      //doSaveStatisctics(); //guarda el valor promedio de llenado
+      DoSaveStatistics(); //guardo los valores de llenada
+      Serial.println(F("Tiempos de llenado borrados"));
     }
-    else if (cmd == "DEL_ST")
-    {
-      CleanStatistics(true);
-    }
-    else if (cmd == "S" || cmd == "s")
+    else if (cmd == "ST")
     {
       DoPrintStatus();
     }
-    else if (cmd == "PRINT_STATISTICS")
+    else if (cmd == "STD")
     {
       PrintStatistics();
+    }
+    else if (cmd == "DEL STD")
+    {
+      //elimina las estadisticas y las guarda los valores
+      CleanStatistics(true);
+      Serial.println(F("Estadisticas borradas"));
     }
     else
     {
@@ -65,7 +80,9 @@ void ReadInfoViewButton()
 {
   if (IsInfoViewButtonPressed())
   {
+#ifdef LOG_ENABLED
     Serial.println(F("Show Info View "));
+#endif
     ShowInfoView();
   }
 }
@@ -96,7 +113,9 @@ void ReadResetAndClearStatisticsButton()
 {
   if (IsResetButtonPressed())
   {
+#ifdef LOG_ENABLED
     Serial.println(F("RESET"));
+#endif    
     automaticFSM.FromState = AUTO_IDLE;
     automaticFSM.State = AUTO_IDLE;
     automaticFSM.NextState = AUTO_NULL;
@@ -117,7 +136,9 @@ void ReadResetAndClearStatisticsButton()
 
   if (IsCleanStatisticsButtonPressed())
   {
+#ifdef LOG_ENABLED
     Serial.println(F("Clean Statistics"));
+#endif
     CleanStatistics(true);
   }
 }
@@ -179,9 +200,9 @@ void DoPrintStatus()
 
   //Modo
   if (IsAutomaticMode())
-    Serial.println(F("*** MODO: Automatic ***"));
+    Serial.println(F("** MODO: Automatic **"));
   else
-    Serial.println(F("*** MODO: Manual ***"));
+    Serial.println(F("** MODO: Manual **"));
 
   //Estado del proceso
   Serial.print(F("FSM Status: "));
@@ -194,42 +215,42 @@ void DoPrintStatus()
   Serial.println();
 
   //Niveles
-  Serial.println(F("*** Niveles ***"));
-  Serial.print(F("Cisterna Nivel Minimo: "));
+  Serial.println(F("** Niveles **"));
+  Serial.print(F("Cisterna Minimo: "));
   PrintTrueOrFalse (sensores.IsCisternaSensorMinVal);
 
   Serial.print(F("Cisterna Empty Start Time: "));
   Serial.println(sensores.CisternaEmptyStartTime);
 
-  Serial.print(F("Cisterna Empty Time (mili): "));
+  Serial.print(F("Cisterna Empty Time: "));
   Serial.println(sensores.CisternaEmptyMillis);
 
-  Serial.print(F("Tanque Nivel Minimo: "));
+  Serial.print(F("Tanque Minimo: "));
   PrintTrueOrFalse (sensores.IsTanqueSensorMinVal);
 
-  Serial.print(F("Tanque Nivel Maximo: "));
+  Serial.print(F("Tanque Maximo: "));
   PrintTrueOrFalse (sensores.IsTanqueSensorMaxVal);
 
   Serial.println();
 
   //Bombas
-  Serial.println(F("*** BOMBA 1 ***"));
+  Serial.println(F("** B1 **"));
   PrintBomba(&bomba1);
   Serial.println();
 
-  Serial.println(F("*** BOMBA 2 ***"));
+  Serial.println(F("** B2 **"));
   PrintBomba(&bomba2);
   Serial.println();
 
   //Vista
-  PrintView();
-  Serial.println();
+  //PrintView();
+  //Serial.println();
 
   PrintAlarm();
   Serial.println();
 
 }
-
+/*
 void PrintView()
 {
   Serial.println(F("*** VIEW ****"));
@@ -245,7 +266,7 @@ void PrintView()
   Serial.print(F("Info View Number: "));
   Serial.println(view.InfoViewNumberActive);
 }
-
+*/
 void PrintAlarm()
 {
   Serial.println(F("*** Alarmas ***"));
@@ -255,10 +276,10 @@ void PrintAlarm()
   Serial.print(F("Bombas no disponibles: "));
   PrintOnOrOff (alarm.IsNotAvailableBombasAlarmON);
 
-  Serial.print(F("Bomba 1: "));
+  Serial.print(F("B1: "));
   PrintOnOrOff (alarm.IsBomba1AlarmON);
 
-  Serial.print(F("Bomba 2: "));
+  Serial.print(F("B2: "));
   PrintOnOrOff (alarm.IsBomba2AlarmON);
 
   Serial.print(F("Cisterna: "));
@@ -291,19 +312,19 @@ void PrintBomba(Bomba* bomba)
   Serial.print(F("Uses: "));
   Serial.println(bomba->Uses);
 
-  Serial.print(F("ContactorErrorCounter: "));
+  Serial.print(F("ContactorErrCounter: "));
   Serial.println(bomba->ContactorErrorCounter);
 
   Serial.print(F("Fill Time: "));
   Serial.println(bomba->FillTimeSecondsAverage);
 
   Serial.print(F("Fill Times: "));
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < BOMBA_FILLTIMES_READ_MAX-1; i++)
   {
     Serial.print(bomba->FillTimeSeconds[i]);
     Serial.print(F(", "));
   }
-  Serial.println(bomba->FillTimeSeconds[9]);
+  Serial.println(bomba->FillTimeSeconds[BOMBA_FILLTIMES_READ_MAX-1]);
 
   Serial.print(F("IsContactorClosed: "));
   PrintTrueOrFalse (bomba->IsContactorClosed);
@@ -311,16 +332,16 @@ void PrintBomba(Bomba* bomba)
   Serial.print(F("IsTermicoOk: "));
   PrintTrueOrFalse (bomba->IsTermicoOk);
 
-  Serial.print(F("RequestOn: "));
+  Serial.print(F("ReqOn: "));
   PrintTrueOrFalse (bomba->RequestOn);
 
-  Serial.print(F("RequestOff: "));
+  Serial.print(F("ReqOff: "));
   PrintTrueOrFalse(bomba->RequestOff);
 
-  Serial.print(F("RequestEnabled: "));
+  Serial.print(F("ReqEnabled: "));
   PrintTrueOrFalse (bomba->RequestEnabled);
 
-  Serial.print(F("RequestDisabled: "));
+  Serial.print(F("ReqDisabled: "));
   PrintTrueOrFalse(bomba->RequestDisabled);
 
   Serial.print(F("Timer: "));
@@ -339,13 +360,13 @@ void PrintStateBomba(Bomba* bomba, bool newLine)
       Serial.print(F("OFF"));
       break;
     case BOMBA_STATE_ERROR_CONTACTOR_ABIERTO:
-      Serial.print(F("ERROR_CONTACTOR_ABIERTO"));
+      Serial.print(F("ERR_CONTACTOR_ABIERTO"));
       break;
     case BOMBA_STATE_ERROR_CONTACTOR_CERRADO:
-      Serial.print(F("ERROR_CONTACTOR_CERRADO"));
+      Serial.print(F("ERR_CONTACTOR_CERRADO"));
       break;
     case BOMBA_STATE_ERROR_TERMICO:
-      Serial.print(F("ERROR_TERMICO"));
+      Serial.print(F("ERR_TERMICO"));
       break;
   }
 

@@ -14,9 +14,6 @@ void ReadExecutionMode()
     //si hay una bomba encendida...se apaga pero no se notifica si no se apago como un error porque puede ser que se haya prendido de manera externa.
     //paso a manual
     //pulsador...
-#ifdef LOG_ENABLED
-    Serial.println(F("Change mode pressed."));
-#endif
     if (IsAutomaticMode())
     {
       automaticFSM.Mode = MANUAL;
@@ -27,20 +24,19 @@ void ReadExecutionMode()
     }
   }
 
-
   if (currMode != automaticFSM.Mode)
   {
     if (IsAutomaticMode())
     {
 #ifdef LOG_ENABLED
-      Serial.println(F("Change Mode -> AUTO"));
+      Serial.println(F("Mode -> AUTO"));
 #endif
       StopManualAlarm();
     }
     else
     {
 #ifdef LOG_ENABLED
-      Serial.println(F("Change Mode -> MANUAL"));
+      Serial.println(F("Mode -> MANUAL"));
 #endif
       StartManualAlarm();
 

@@ -46,9 +46,9 @@ void Statistics_BombaOff(Bomba* bomba, boolean registerFillTime)
       Stadistics_AddFillTime(bomba, seconds1);
 
     if (bomba->Number == BOMBA1)
-      statistics.Bomba1TotalSeconds = statistics.Bomba1TotalSeconds + seconds1; 
+      statistics.Bomba1TotalSeconds = statistics.Bomba1TotalSeconds + seconds1;
     else
-      statistics.Bomba2TotalSeconds = statistics.Bomba2TotalSeconds + seconds1; 
+      statistics.Bomba2TotalSeconds = statistics.Bomba2TotalSeconds + seconds1;
 
     statistics.Changed = true;
   }
@@ -59,7 +59,7 @@ void Stadistics_AddFillTime(Bomba* bomba, unsigned long fillTime)
   unsigned long total = fillTime;
   byte count = 1;
 
-  for (int i = 8; i >= 0; i--)
+  for (int i = BOMBA_FILLTIMES_READ_MAX-2; i >= 0; i--)
   {
     bomba->FillTimeSeconds[i + 1] = bomba->FillTimeSeconds[i];
 
@@ -117,20 +117,24 @@ void CleanStatistics(boolean save)
   statistics.ErrorFaseTotalSeconds = 0;
   statistics.ErrorFaseCount = 0;
 
-  statistics.Changed = false;
-
   statistics.FaseErrorBeginTime = 0;
-
   statistics.LastTimeSaved = millis();
+
+  //borro los tiempos de llenado
+  CleanFillTimes();
+  statistics.Changed = false;
 
   //guardo las estadisticas reiniciadas
   if (save)
     DoSaveStatistics();
+
+    //hago sonar el buzzer
+  Alarm_Pip();
 }
 
 void DoSaveStatistics()
 {
-#ifdef STATISTICS_SAVE_ENABLED
+#ifdef EEPROM_ENABLED
   unsigned long lAux = 0;
   unsigned int iAux = 0;
 
@@ -144,13 +148,13 @@ void DoSaveStatistics()
     EEPROM.put(BOMBA2_USES_ADDR, statistics.Bomba2Uses);
 
   //Minutos de uso
-  EEPROM.get(BOMBA1_TOTAL_MINUTES_ADDR, lAux);
-  if (lAux != statistics.Bomba1TotalMinutes)
-    EEPROM.put(BOMBA1_TOTAL_MINUTES_ADDR, statistics.Bomba1TotalMinutes);
+  EEPROM.get(BOMBA1_TOTAL_SECONDS_ADDR, lAux);
+  if (lAux != statistics.Bomba1TotalSeconds)
+    EEPROM.put(BOMBA1_TOTAL_SECONDS_ADDR, statistics.Bomba1TotalSeconds);
 
-  EEPROM.get(BOMBA2_TOTAL_MINUTES_ADDR, lAux);
-  if (lAux != statistics.Bomba2TotalMinutes)
-    EEPROM.put(BOMBA2_TOTAL_MINUTES_ADDR, statistics.Bomba2TotalMinutes);
+  EEPROM.get(BOMBA2_TOTAL_SECONDS_ADDR, lAux);
+  if (lAux != statistics.Bomba2TotalSeconds)
+    EEPROM.put(BOMBA2_TOTAL_SECONDS_ADDR, statistics.Bomba2TotalSeconds);
 
 
 
@@ -166,13 +170,22 @@ void DoSaveStatistics()
 
 
   //tiempo de llenado
-  EEPROM.get(BOMBA1_FILLING_TIME_MINUTES_ADDR, iAux);
-  if (iAux != bomba1.FillTimeSecondsAverage)
-    EEPROM.put(BOMBA1_FILLING_TIME_MINUTES_ADDR, bomba1.FillTimeSecondsAverage);
+  EEPROM.get(BOMBA1_FILLING_TIME_SECONDS_AVG_ADDR, lAux);
+  if (lAux != bomba1.FillTimeSecondsAverage)
+    EEPROM.put(BOMBA1_FILLING_TIME_SECONDS_AVG_ADDR, bomba1.FillTimeSecondsAverage);
 
-  EEPROM.get(BOMBA2_FILLING_TIME_MINUTES_ADDR, iAux);
-  if (iAux != bomba2.FillTimeSecondsAverage)
-    EEPROM.put(BOMBA2_FILLING_TIME_MINUTES_ADDR, bomba2.FillTimeSecondsAverage);
+  EEPROM.get(BOMBA2_FILLING_TIME_SECONDS_AVG_ADDR, lAux);
+  if (lAux != bomba2.FillTimeSecondsAverage)
+    EEPROM.put(BOMBA2_FILLING_TIME_SECONDS_AVG_ADDR, bomba2.FillTimeSecondsAverage);
+
+  EEPROM.get(BOMBA1_FILLING_TIME_SECONDS_MAX_ADDR, lAux);
+  if (lAux != bomba1.FillTimeSecondsMaximum)
+    EEPROM.put(BOMBA1_FILLING_TIME_SECONDS_MAX_ADDR, bomba1.FillTimeSecondsMaximum);
+
+  EEPROM.get(BOMBA2_FILLING_TIME_SECONDS_MAX_ADDR, lAux);
+  if (lAux != bomba2.FillTimeSecondsMaximum)
+    EEPROM.put(BOMBA2_FILLING_TIME_SECONDS_MAX_ADDR, bomba2.FillTimeSecondsMaximum);
+
 
 
 
@@ -181,18 +194,17 @@ void DoSaveStatistics()
   if (lAux != statistics.ErrorFaseCount)
     EEPROM.put(ERROR_FASE_COUNT_ADDR, statistics.ErrorFaseCount);
 
-
   //cantidad de minutos por error de fase
-  EEPROM.get(ERROR_FASE_TOTAL_MINUTES_ADDR, lAux);
-  if (lAux != statistics.ErrorFaseTotalMinutes)
-    EEPROM.put(ERROR_FASE_TOTAL_MINUTES_ADDR, statistics.ErrorFaseTotalMinutes);
+  EEPROM.get(ERROR_FASE_TOTAL_SECONDS_ADDR, lAux);
+  if (lAux != statistics.ErrorFaseTotalSeconds)
+    EEPROM.put(ERROR_FASE_TOTAL_SECONDS_ADDR, statistics.ErrorFaseTotalSeconds);
 
 #endif
 }
 
 void ReadStatistics()
 {
-#ifdef STATISTICS_SAVE_ENABLED
+#ifdef EEPROM_ENABLED
   unsigned long lAux = 0;
   unsigned int iAux = 0;
 
@@ -205,11 +217,11 @@ void ReadStatistics()
 
 
   //Minutos de uso
-  EEPROM.get(BOMBA1_TOTAL_MINUTES_ADDR, lAux);
-  statistics.Bomba1TotalMinutes = lAux;
+  EEPROM.get(BOMBA1_TOTAL_SECONDS_ADDR, lAux);
+  statistics.Bomba1TotalSeconds = lAux;
 
-  EEPROM.get(BOMBA2_TOTAL_MINUTES_ADDR, lAux);
-  statistics.Bomba2TotalMinutes = lAux;
+  EEPROM.get(BOMBA2_TOTAL_SECONDS_ADDR, lAux);
+  statistics.Bomba2TotalSeconds = lAux;
 
 
   //Cantidad de errores de termico
@@ -221,58 +233,59 @@ void ReadStatistics()
 
 
   //tiempo de llenado
-  EEPROM.get(BOMBA1_FILLING_TIME_MINUTES_ADDR, iAux);
-  bomba1.FillTimeSecondsAverage = iAux;
+  EEPROM.get(BOMBA1_FILLING_TIME_SECONDS_AVG_ADDR, lAux);
+  bomba1.FillTimeSecondsAverage = lAux;
 
-  EEPROM.get(BOMBA2_FILLING_TIME_MINUTES_ADDR, iAux);
-  bomba2.FillTimeSecondsAverage = iAux;
+  EEPROM.get(BOMBA2_FILLING_TIME_SECONDS_AVG_ADDR, lAux);
+  bomba2.FillTimeSecondsAverage = lAux;
 
+  EEPROM.get(BOMBA1_FILLING_TIME_SECONDS_MAX_ADDR, lAux);
+  bomba1.FillTimeSecondsMaximum = lAux;
+
+  EEPROM.get(BOMBA2_FILLING_TIME_SECONDS_MAX_ADDR, lAux);
+  bomba2.FillTimeSecondsMaximum = iAux;
 
   //Cantidad de errores de fase
   EEPROM.get(ERROR_FASE_COUNT_ADDR, lAux);
   statistics.ErrorFaseCount = lAux;
 
-
   //cantidad de minutos por error de fase
-  EEPROM.get(ERROR_FASE_TOTAL_MINUTES_ADDR, lAux);
-  statistics.ErrorFaseTotalMinutes = lAux;
-
+  EEPROM.get(ERROR_FASE_TOTAL_SECONDS_ADDR, lAux);
+  statistics.ErrorFaseTotalSeconds = lAux;
 #endif
 }
 
 void PrintStatistics()
 {
-  Serial.println(F("*** ESTADISTICAS ***"));
   PrintStatisticsBomba(statistics.Bomba1Uses, statistics.Bomba1TotalSeconds, statistics.Bomba1ErrorTermicoCount, &bomba1);
   Serial.println();
   PrintStatisticsBomba(statistics.Bomba2Uses, statistics.Bomba2TotalSeconds, statistics.Bomba2ErrorTermicoCount, &bomba2);
   Serial.println();
 
-  Serial.println();
-  Serial.println(F("*** ERR DE FASE ***"));
+  Serial.println(F("** ERR DE FASE **"));
 
   Serial.print(F("# Err: "));
   Serial.println(statistics.ErrorFaseCount);
 
-  Serial.print(F("Tiempo (seg): "));
+  Serial.print(F("T seg: "));
   Serial.println(statistics.ErrorFaseTotalSeconds);
 }
 
 void PrintStatisticsBomba(unsigned long uses, unsigned long sec, unsigned long errTerm, Bomba* bomba)
 {
-  Serial.print(F("*** BOMBA "));
+  Serial.print(F("** BOMBA "));
   Serial.print(bomba->Number);
-  Serial.println(F(" ***"));
+  Serial.println(F(" **"));
 
   Serial.print(F("# Usos: "));
   Serial.println(uses);
 
-  Serial.print(F("Usos seg: "));
+  Serial.print(F("ON seg: "));
   Serial.println(sec);
 
   Serial.print(F("# ERR termico: "));
   Serial.println(errTerm);
 
-  Serial.print(F("Tiempo llenado seg.: "));
+  Serial.print(F("Llenado seg: "));
   Serial.println(bomba->FillTimeSecondsAverage);
 }

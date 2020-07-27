@@ -1,3 +1,9 @@
+void Alarm_Pip()
+{
+  ActivateAlarm();
+  delay(100);
+  DeactivateAlarm();
+}
 
 #ifdef ALARM_LED
 

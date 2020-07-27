@@ -11,8 +11,6 @@ void SetupFase()
   fase2.IsOk = true;
   fase3.IsOk = true;
 
-#ifdef FASE_FROM_EEPROM_ENABLED
-
   float voltRef = 0;
   int cal = 0;
   EEPROM.get(FASE1_TENSION_ENTRADA_ADDR, voltRef);
@@ -34,21 +32,20 @@ void SetupFase()
   fase3.ConversionFactor = cal;
 
 #ifdef LOG_ENABLED
-  Serial.print(F("   Fase 1 - Tension de referencia: "));
+  Serial.print(F("   F1 - Volts Ref: "));
   Serial.print(fase1.InputVoltsReference);
-  Serial.print(F(", Valor de calibración: "));
+  Serial.print(F(", Cal: "));
   Serial.println(fase1.ConversionFactor);
 
-  Serial.print(F("   Fase 2 - Tension de referencia: "));
+  Serial.print(F("   F2 - Volts Ref: "));
   Serial.print(fase2.InputVoltsReference);
-  Serial.print(F(", Valor de calibración: "));
+  Serial.print(F(", Cal: "));
   Serial.println(fase2.ConversionFactor);
 
-  Serial.print(F("   Fase 3 - Tension de referencia: "));
+  Serial.print(F("   F3 - Volts Ref: "));
   Serial.print(fase3.InputVoltsReference);
-  Serial.print(F(", Valor de calibración: "));
+  Serial.print(F(", Cal: "));
   Serial.println(fase3.ConversionFactor);
-#endif
 #endif
 
 #ifndef FASE1_ENABLED
@@ -124,8 +121,7 @@ boolean ReadFase1(unsigned long t)
   int fase1Val = analogRead(FASE1_INPUT_PIN);
   float volts = mapLocal(fase1Val, 0, fase1.ConversionFactor, 0, fase1.InputVoltsReference);
   //agrego el nuevo valor
-  updateFaseValues(&fase1, t, volts);
-
+  UpdateFaseValues(&fase1, t, volts);
 #else
   fase1.Voltage = fase1.InputVoltsReference;
   fase1.IsOk = true;
@@ -144,7 +140,7 @@ boolean ReadFase2(unsigned long t)
   int fase2Val = analogRead(FASE2_INPUT_PIN);
   float volts = mapLocal(fase2Val, 0, fase2.ConversionFactor, 0, fase2.InputVoltsReference);
   //agrego el nuevo valor
-  updateFaseValues(&fase2, t, volts);
+  UpdateFaseValues(&fase2, t, volts);
 #else
   fase2.Voltage = fase2.InputVoltsReference;
   fase2.IsOk = true;
@@ -164,7 +160,7 @@ boolean ReadFase3(unsigned long t)
   float volts = mapLocal(fase3Val, 0, fase3.ConversionFactor, 0, fase3.InputVoltsReference);
 
   //agrego el nuevo valor
-  updateFaseValues(&fase3, t, volts);
+  UpdateFaseValues(&fase3, t, volts);
 #else
   fase3.Voltage = fase3.InputVoltsReference;
   fase3.IsOk = true;
@@ -174,7 +170,7 @@ boolean ReadFase3(unsigned long t)
 }
 
 
-void updateFaseValues(Fase * fase, unsigned long readTime, float volts)
+void UpdateFaseValues(Fase * fase, unsigned long readTime, float volts)
 {
   fase->ReadCount = fase->ReadCount + 1;
   fase->ReadTotal = fase->ReadTotal + volts;
@@ -226,7 +222,7 @@ void OnFaseOk()
 //                  FASE CALIBRATION
 // *************************************************** //
 
-void calibrateFase(int pinNumber, int faseNumber, String voltsStr)
+void CalibrateFase(int pinNumber, int faseNumber, String voltsStr)
 {
   voltsStr.trim();
   float inputVolts = voltsStr.toFloat();
@@ -237,7 +233,7 @@ void calibrateFase(int pinNumber, int faseNumber, String voltsStr)
     return;
   }
 
-  int calibration = doCalibrateFase(pinNumber, faseNumber, inputVolts);
+  int calibration = DoCalibrateFase(pinNumber, faseNumber, inputVolts);
 
   if (calibration > 0)
   {
@@ -282,7 +278,7 @@ void calibrateFase(int pinNumber, int faseNumber, String voltsStr)
   }
 }
 
-int doCalibrateFase(int pinNumber, int faseNumber, float inputVolts)
+int DoCalibrateFase(int pinNumber, int faseNumber, float inputVolts)
 {
   Serial.print(F("Inicio calibracion Fase "));
   Serial.println(faseNumber);
