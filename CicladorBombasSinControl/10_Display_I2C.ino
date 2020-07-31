@@ -186,20 +186,20 @@ void ShowNextInfoView()
 
     case 1:
       //Estadisticas Bomba 1
-      PrintBombaView1(&bomba1);
+      PrintBombaView(&bomba1);
       return;
 
     case 2:
-      PrintBombaView2(&bomba1);
+      PrintBombaView(&bomba2);
       return;
 
     case 3:
-      //Estadisticas Bomba 2
-      PrintBombaView1(&bomba2);
+      //Estadisticas Tanque
+      PrintTanqueView(&bomba1);
       return;
 
     case 4:
-      PrintBombaView2(&bomba2);
+      PrintTanqueView(&bomba2);
       return;
 
     case 5:
@@ -215,7 +215,7 @@ void ShowNextInfoView()
 
       lcd.setCursor(0, 2);
       lcd.print(F("Tiempo:"));
-      PrintTimeFromSeconds(statistics.ErrorFaseTotalSeconds, 2);
+      PrintTimeFromSeconds(statistics.ErrorFaseTotalSeconds, 2, false);
       return;
 
     case 6:
@@ -246,7 +246,7 @@ void ShowNextInfoView()
 }
 
 
-void PrintBombaView1(Bomba* bomba)
+void PrintBombaView(Bomba* bomba)
 {
   int number = bomba->Number;
   lcd.clear();
@@ -268,43 +268,44 @@ void PrintBombaView1(Bomba* bomba)
   lcd.setCursor(0, 2);
   lcd.print(F("Tiempo ON:"));
   if (number == BOMBA1)
-    PrintTimeFromSeconds(statistics.Bomba1TotalSeconds, 2);
+    PrintTimeFromSeconds(statistics.Bomba1TotalSeconds, 2, false);
   else
-    PrintTimeFromSeconds(statistics.Bomba2TotalSeconds, 2);
+    PrintTimeFromSeconds(statistics.Bomba2TotalSeconds, 2, false);
 
   lcd.setCursor(0, 3);
-  lcd.print(F("Llenado:"));
-  PrintTimeFromSeconds(bomba->FillTimeSecondsAverage, 3);
+  lcd.print(F("Errores termico:    "));
+
+  n = statistics.Bomba1ErrorTermicoCount;
+  if (bomba->Number == BOMBA2)
+    n = statistics.Bomba2ErrorTermicoCount;
+  len = GetLen(n);
+
+  lcd.setCursor(20 - len, 3);
+  lcd.print(n);
 }
 
-void PrintBombaView2(Bomba* bomba)
+
+void PrintTanqueView(Bomba* bomba)
 {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(F("****** Tanque ******"));
+  
   lcd.setCursor(0, 1);
-  lcd.print(F("Contactor:          "));
-  if (bomba->State == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
-  {
-    lcd.setCursor(15, 1);
-    lcd.print(F("ERROR"));
-  }
+  if (bomba->Number == BOMBA1)
+    lcd.print(F("** Llenado con B1 **"));
   else
-  {
-    lcd.setCursor(18, 1);
-    lcd.print(F("OK"));
-  }
-
+    lcd.print(F("** Llenado con B2 **"));
+  
   lcd.setCursor(0, 2);
-  lcd.print(F("Termico:            "));
-  if (bomba->IsTermicoOk)
-  {
-    lcd.setCursor(18, 2);
-    lcd.print(F("OK"));
-  }
-  else
-  {
-    lcd.setCursor(15, 2);
-    lcd.print(F("ERROR"));
-  }
+  lcd.print(F("Promedio:"));
+  PrintTimeFromSeconds(bomba->FillTimeSecondsAverage, 2, true);
 
+  lcd.setCursor(0, 3);
+  lcd.print(F("Maximo:"));
+  PrintTimeFromSeconds(bomba->FillTimeSecondsMaximum, 3, true);
+  
+/*
   lcd.setCursor(0, 3);
   lcd.print(F("Errores termico:    "));
 
@@ -315,6 +316,45 @@ void PrintBombaView2(Bomba* bomba)
 
   lcd.setCursor(20 - len, 3);
   lcd.print(n);
+
+  
+    lcd.setCursor(0, 1);
+    lcd.print(F("Contactor:          "));
+    if (bomba->State == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
+    {
+    lcd.setCursor(15, 1);
+    lcd.print(F("ERROR"));
+    }
+    else
+    {
+    lcd.setCursor(18, 1);
+    lcd.print(F("OK"));
+    }
+
+    lcd.setCursor(0, 2);
+    lcd.print(F("Termico:            "));
+    if (bomba->IsTermicoOk)
+    {
+    lcd.setCursor(18, 2);
+    lcd.print(F("OK"));
+    }
+    else
+    {
+    lcd.setCursor(15, 2);
+    lcd.print(F("ERROR"));
+    }
+
+    lcd.setCursor(0, 3);
+    lcd.print(F("Errores termico:    "));
+
+    int n = statistics.Bomba1ErrorTermicoCount;
+    if (bomba->Number == BOMBA2)
+    n = statistics.Bomba2ErrorTermicoCount;
+    int len = GetLen(n);
+
+    lcd.setCursor(20 - len, 3);
+    lcd.print(n);
+  */
 }
 
 
@@ -365,12 +405,12 @@ void UpdateBombaDisplay(Bomba* bomba)
     }
     else if (bomba->State == BOMBA_STATE_OFF)
       lcd.print(F("OFF           "));
-    else if (bomba->State == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO)
-      lcd.print(F("Err.Contactor "));
-    else if (bomba->State == BOMBA_STATE_ERROR_CONTACTOR_CERRADO)
-      lcd.print(F("Err.Contactor "));
+    else if (bomba->State == BOMBA_STATE_ERROR_CONTACTOR_ABIERTO || bomba->State == BOMBA_STATE_ERROR_CONTACTOR_CERRADO)
+      lcd.print(F("Err. Contactor"));
     else if (bomba->State == BOMBA_STATE_ERROR_TERMICO)
-      lcd.print(F("Err.Termico   "));
+      lcd.print(F("Err. Termico  "));
+    else if (bomba->State == BOMBA_STATE_ERROR_FILL_TIMEOUT)
+      lcd.print(F("Err. Bomba    "));
   }
 }
 
@@ -390,7 +430,7 @@ void UpdateBombaWorkingTime(Bomba* bomba)
   if (bomba->Number == BOMBA2)
     row = 1;
 
-  UpdateTime(totalSec, row, h, m, s);
+  UpdateTime(totalSec, row, h, m, s, true);
 }
 
 /*
@@ -408,20 +448,28 @@ void UpdateBombaWorkingTime(Bomba* bomba)
   }
 */
 
-void PrintTimeFromSeconds(unsigned long totalSec, int row)
+void PrintTimeFromSeconds(unsigned long totalSec, int row, boolean printSeconds)
 {
   int h = -1;
   int m = -1;
   int s = -1;
 
-  lcd.setCursor(12, row);
-  lcd.print(F("00:00:00"));
+  if (printSeconds)
+  {
+    lcd.setCursor(12, row);
+    lcd.print(F("00:00:00"));
+  }
+  else
+  {
+    lcd.setCursor(15, row);
+    lcd.print(F("00:00"));
+  }
 
-  UpdateTime(totalSec, row, h, m, s);
+  UpdateTime(totalSec, row, h, m, s, printSeconds);
 }
 
 
-void UpdateTime(unsigned long totalSec, int row, int &h, int &m, int &s)
+void UpdateTime(unsigned long totalSec, int row, int &h, int &m, int &s, boolean printSeconds)
 {
   int lastH = h;
   int lastM = m;
@@ -429,34 +477,38 @@ void UpdateTime(unsigned long totalSec, int row, int &h, int &m, int &s)
 
   convertSeconds2HMS(totalSec, h, m, s);
 
+  int deltaCursor = 0;
+  if (!printSeconds)
+    deltaCursor = 3;
+
   if (h != lastH)
   {
     if (h < 100)
     {
-      lcd.setCursor(12, row);
+      lcd.setCursor(12 + deltaCursor, row);
       if (h < 10)
         lcd.print(F("0"));
     }
     else if (h < 1000)
-      lcd.setCursor(11, row);
+      lcd.setCursor(11 + deltaCursor, row);
     else if (h < 10000)
-      lcd.setCursor(10, row);
+      lcd.setCursor(10 + deltaCursor, row);
     else if (h < 100000)
-      lcd.setCursor(9, row);
+      lcd.setCursor(9 + deltaCursor, row);
 
     lcd.print(h);
   }
 
   if (m != lastM)
   {
-    lcd.setCursor(15, row);
+    lcd.setCursor(15 + deltaCursor, row);
     if (m < 10)
       lcd.print(F("0"));
 
     lcd.print(m);
   }
 
-  if (s != lastS)
+  if (printSeconds && s != lastS)
   {
     lcd.setCursor(18, row);
     if (s < 10)

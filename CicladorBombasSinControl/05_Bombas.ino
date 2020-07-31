@@ -344,11 +344,11 @@ unsigned long GetBombaWorkingTimeInSeconds(Bomba* bomba)
 //Devuelve el tiempo maximo de llenado antes de que se considere que la bomba no funciona.
 unsigned long GetBombaWorkingTimeMaximumSeconds(Bomba* bomba)
 {
-  unsigned int avg = bomba->FillTimeSecondsAverage;
-  if (avg > 0)
-    return TANQUE_TIME_TO_FULL_AVERAGE_PERCENTAGE * avg;
+  unsigned int maxTime = bomba->FillTimeSecondsMaximum;
+  if (maxTime > 0)
+    return TANQUE_TIME_TO_FULL_FACTOR * maxTime;
   else
-    return TANQUE_TIME_TO_FULL;
+    return TANQUE_TIME_TO_FULL_INITIAL;
 }
 
 

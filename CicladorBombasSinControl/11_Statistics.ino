@@ -59,7 +59,7 @@ void Stadistics_AddFillTime(Bomba* bomba, unsigned long fillTime)
   unsigned long total = fillTime;
   byte count = 1;
 
-  for (int i = BOMBA_FILLTIMES_READ_MAX-2; i >= 0; i--)
+  for (int i = BOMBA_FILLTIMES_READ_MAX - 2; i >= 0; i--)
   {
     bomba->FillTimeSeconds[i + 1] = bomba->FillTimeSeconds[i];
 
@@ -72,6 +72,9 @@ void Stadistics_AddFillTime(Bomba* bomba, unsigned long fillTime)
 
   bomba->FillTimeSeconds[0] = fillTime;
   bomba->FillTimeSecondsAverage = total / count;
+
+  if (bomba->FillTimeSecondsMaximum < fillTime)
+    bomba->FillTimeSecondsMaximum = fillTime;
 }
 
 void Statistics_BombaErrorTermico(Bomba* bomba)
@@ -128,7 +131,7 @@ void CleanStatistics(boolean save)
   if (save)
     DoSaveStatistics();
 
-    //hago sonar el buzzer
+  //hago sonar el buzzer
   Alarm_Pip();
 }
 

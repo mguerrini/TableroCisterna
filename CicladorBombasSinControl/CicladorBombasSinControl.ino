@@ -1,7 +1,7 @@
 #include <EEPROM.h>
 
 
-#define LOG_ENABLED
+//#define LOG_ENABLED
 #ifdef LOG_ENABLED
 #define LOG_MIN_ENABLED
 #endif
@@ -12,7 +12,7 @@
 // --- DEBUG ---
 //#define DEBUG
 #ifdef DEBUG
-  #define DEBUG_CONTINUE_PIN A3
+  #define DEBUG_CONTINUE_PIN A2
 #endif
 
 #define MODO_OUTPUT_VIEW_ENABLED //Muestra el modo en la pantalla
@@ -55,6 +55,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define ERROR_FASE_COUNT_ADDR 64 //unsigned long
 
 #define BOMBA_CICLOS_MAX_ADDR 70 //unsigned long
+
 // ****************************************************************** //
 //                        CONFIGURACIONES
 // ****************************************************************** //
@@ -72,7 +73,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== INVERSOR ======================
 //salida al rele que activa el Rele de los contactores
-#define BOMBA_SWAP_RELE_PIN 13
+#define BOMBA_SWAP_RELE_PIN A1
 //valor para Bomba1 Activa
 #define BOMBA1_ACTIVE  HIGH
 //valor para Bomba2 Activa
@@ -87,7 +88,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== FASES ======================
 //#define FASE1_ENABLED //si no esta definido, asigna los valores por defeto en vez de leer la eeprom y los valores inputs
-#define FASE1_INPUT_PIN A3
+#define FASE1_INPUT_PIN A2
 
 //#define FASE2_ENABLED
 #define FASE2_INPUT_PIN A6
@@ -95,12 +96,13 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define FASE3_ENABLED
 #define FASE3_INPUT_PIN A7
 
-#define FASE_OUTPUT_PIN A1
+#define FASE_OUTPUT_PIN 13
 #define FASE_OUTPUT_CLOSE_RELE HIGH
 #define FASE_OUTPUT_OPEN_RELE LOW
 
-#define TENSION_ENTRADA 5 //220 Volts, pero para testear lo pongo en 5
-//valores de referencia para el valor de 220V
+#define TENSION_ENTRADA 5 //220 Volts, pero para testear lo pongo en 5, se usa cuando no estan habilitadas las fases
+
+//valores de referencia para el valor de 220V, se usa cuando no estan habilitadas las fases
 #define FASE1_220_VALUE 1023
 #define FASE2_220_VALUE 1023
 #define FASE3_220_VALUE 1023
@@ -115,7 +117,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define MANUAL 0
 #define AUTO 1
 
-#define CHANGE_MODE_BTN_PIN A2 //selector Manual / Automatico
+#define CHANGE_MODE_BTN_PIN A3 //selector Manual / Automatico
 #define IS_CHANGE_MODE_PULSADOR true //tipo de boton, pulsador o llave
 
 
@@ -135,16 +137,15 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA1 1
 #define BOMBA2 2
 
-#define BOMBA_USES_MAX 1 //cantidad de usos seguidos por default. Si no se setea se usa este valor
+#define BOMBA_USES_MAX 1 //cantidad de usos seguidos por default. Se usa cuando no esta habilitada la EEPROM
 #define BOMBA_TURNING_ON_TIME 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
 #define BOMBA_TURNING_OFF_TIME 5000 //tiempo que espera hasta que el contactor avise que se abrio.
 
 #define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 0 //Maxima cantidad de intentos
 #define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
 
-#define BOMBA_FILL_TIME_HOURS_MAX 6//Tiempo de llenado inicial del tanque en horas. Un numero grande para que no se corte antes de tiempo
 #define BOMBA_REFRESH_WORKING_TIME 1000 //Tiempo entre refrescos de tiempo de trabajo de las bombas (milisegundos)
-#define BOMBA_FILLTIMES_READ_MAX 2 //Cantidad maxima de lecturas de llenado para sacar el promedio
+#define BOMBA_FILLTIMES_READ_MAX 10 //Cantidad maxima de lecturas de llenado para sacar el promedio
 
 // ====================== CISTERNA/TANQUE ======================
 // --- CISTERNA ---
@@ -153,8 +154,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // --- TANQUE ---
 #define TANQUE_EMPTY_FULL_PIN  9
-#define TANQUE_TIME_TO_FULL 10000 //tiempo (millisegundos) inicial para el llenado del tanque. Luego calcula el tiempo promedio por tanque
-#define TANQUE_TIME_TO_FULL_AVERAGE_PERCENTAGE 2 //valor a multiplicar por el tiempo de llenado promedio para obtener el limite maximo de llenado
+#define TANQUE_TIME_TO_FULL_INITIAL 10000 //tiempo (millisegundos) inicial para el llenado del tanque. Luego calcula el tiempo maximo por tanque
+#define TANQUE_TIME_TO_FULL_FACTOR 2 //valor a multiplicar por el tiempo de llenado maximo para obtener el tiempo limite de llenado
 
 
 // ====================== ESTADISTICAS ======================
@@ -183,9 +184,10 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define FSM_BOMBA_ERROR_CONTACTOR_CERRADO 105
 #define FSM_BOMBA_ERROR_CONTACTOR_ABIERTO 106
 #define FSM_BOMBA_ERROR_TERMICO 107
-#define FSM_BOMBA_DISABLING 108
-#define FSM_BOMBA_DISABLED 109
-#define FSM_BOMBA_ENABLING 110
+#define FSM_BOMBA_ERROR_FILL_TIMEOUT 108
+#define FSM_BOMBA_DISABLING 109
+#define FSM_BOMBA_DISABLED 110
+#define FSM_BOMBA_ENABLING 111
 
 // ====================== FSM AUTO ESTADOS ======================
 #define AUTO_NULL 200
@@ -456,21 +458,16 @@ void SetupPins()
   // --- DEBUG ---
 #ifdef DEBUG
   pinMode(DEBUG_CONTINUE_PIN, INPUT_PULLUP);
-  //digitalWrite(DEBUG_CONTINUE_PIN, HIGH);
 #endif
 
   // --- BUTTON ---
   pinMode(CHANGE_MODE_BTN_PIN, INPUT_PULLUP);
-  //digitalWrite(CHANGE_MODE_BTN_PIN, HIGH);
 
   pinMode(BOMBA_SWAP_BTN_PIN, INPUT_PULLUP);
-  //digitalWrite(BOMBA_SWAP_BTN_PIN, HIGH);
 
   pinMode(RESET_BTN_PIN, INPUT_PULLUP);
-  //digitalWrite(RESET_BTN_PIN, HIGH);
 
   pinMode(VIEW_INFO_PIN, INPUT_PULLUP);
-  //digitalWrite(VIEW_INFO_PIN, HIGH);
 
   // --- INVERSOR ---
   pinMode(BOMBA_SWAP_RELE_PIN, OUTPUT);
@@ -495,28 +492,20 @@ void SetupPins()
 
   // --- SENSORES BOMBAS ---
   pinMode(BOMBA1_ENABLE_PIN, INPUT_PULLUP);
-  //digitalWrite(BOMBA1_ENABLE_PIN, HIGH);
 
   pinMode(BOMBA2_ENABLE_PIN, INPUT_PULLUP);
-  //digitalWrite(BOMBA2_ENABLE_PIN, HIGH);
 
   pinMode(BOMBA1_CONTACTOR_RETORNO_PIN, INPUT_PULLUP);
-  //digitalWrite(BOMBA1_CONTACTOR_RETORNO_PIN, HIGH);
 
   pinMode(BOMBA2_CONTACTOR_RETORNO_PIN, INPUT_PULLUP);
-  //digitalWrite(BOMBA2_CONTACTOR_RETORNO_PIN, HIGH);
 
   pinMode(BOMBA1_TERMICO_RETORNO_PIN, INPUT_PULLUP);
-  //digitalWrite(BOMBA1_TERMICO_RETORNO_PIN, HIGH);
 
   pinMode(BOMBA2_TERMICO_RETORNO_PIN, INPUT_PULLUP);
-  //digitalWrite(BOMBA2_TERMICO_RETORNO_PIN, HIGH);
 
   // --- SENSOR DE NIVELES ---
   pinMode(CISTERNA_EMPTY_PIN, INPUT_PULLUP);
-  //digitalWrite(CISTERNA_EMPTY_PIN, HIGH);
   pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
-  //digitalWrite(TANQUE_EMPTY_FULL_PIN, HIGH);
 }
 
 
@@ -547,7 +536,6 @@ void SetupPins()
 #define MSG_AUTO_CHANGE_BOMBA_USOS_MAXIMO_ALACANZADO 16
 
 #define MSG_AUTO_BOMBA_ACTIVA_NO_DISPONIBLE 17
-#define MSG_AUTO_BOMBA_ACTIVA_FILL_TIMEOUT 18
 
 #define MSG_AUTO_FIRST_TIME_REQUEST_ON 19
 #define MSG_AUTO_REQUEST_OFF 20
@@ -591,4 +579,6 @@ void SetupPins()
 #define MSG_BOMBA_ENABLING 18
 
 #define MSG_BOMBA_ERROR_TERMICO_START_ALARM 19
-#define MSG_BOMBA_CONTACTOR_RESET 20
+#define MSG_BOMBA_STATE_ERROR_FILL_TIMEOUT 20
+#define MSG_BOMBA_ACTIVA_FILL_TIMEOUT 21
+#define MSG_BOMBA_CONTACTOR_RESET 22

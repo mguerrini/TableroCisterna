@@ -192,17 +192,6 @@ void ExecuteAutoState(Bomba* bomba)
       return;
     }
 
-    //verifico el tiempo de bombeo...si supera el maximo....cambio de bomba
-    unsigned long workingMax = GetBombaWorkingTimeMaximumSeconds(bomba);
-    unsigned long workingTime = GetBombaWorkingTimeInSeconds(bomba);
-
-    if (workingTime > workingMax)
-    {
-      //cambio de bomba.....no esta funcionando
-      automaticFSM.NextState = AUTO_CHANGE_BOMBA_FROM_FILL_TIMEOUT;
-      automaticFSM.Message = MSG_AUTO_BOMBA_ACTIVA_FILL_TIMEOUT;
-    }
-
     return;
   }
 
@@ -661,9 +650,6 @@ void PrintAutoMessage(byte number)
 
     case MSG_AUTO_BOMBA_ACTIVA_NO_DISPONIBLE:
       Serial.print(F("B Activa no disponible"));
-      break;
-    case MSG_AUTO_BOMBA_ACTIVA_FILL_TIMEOUT:
-      Serial.print(F("B Activa Fill Timeout"));
       break;
 
     case MSG_AUTO_REQUEST_OFF:
