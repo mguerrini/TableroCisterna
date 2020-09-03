@@ -9,7 +9,8 @@ void ReadExecutionMode()
 {
   byte currMode = automaticFSM.Mode;
 
-  if (IsChangeModeButtonPressed(IS_CHANGE_MODE_PULSADOR))
+#ifdef IS_CHANGE_MODE_SWITCH
+  if (IsChangeModeButtonPressed(true))
   {
     //si hay una bomba encendida...se apaga pero no se notifica si no se apago como un error porque puede ser que se haya prendido de manera externa.
     //paso a manual
@@ -23,6 +24,20 @@ void ReadExecutionMode()
       automaticFSM.Mode = AUTO;
     }
   }
+
+#else
+  if (IsChangeModeButtonPressed(false))
+  {
+    //si hay una bomba encendida...se apaga pero no se notifica si no se apago como un error porque puede ser que se haya prendido de manera externa.
+    //paso a manual
+    //pulsador...
+    automaticFSM.Mode = AUTO;
+  }
+  else
+  {
+    automaticFSM.Mode = MANUAL;
+  }
+#endif
 
   if (currMode != automaticFSM.Mode)
   {

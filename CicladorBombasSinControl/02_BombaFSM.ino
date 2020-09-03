@@ -737,8 +737,6 @@ void PrintBombaMessage(Bomba* bomba)
     case MSG_BOMBA_ACTIVA_FILL_TIMEOUT:
       Serial.print(F("Fill Timeout"));
       break;
-
-
   }
 
   Serial.print(F(")"));

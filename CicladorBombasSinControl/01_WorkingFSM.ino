@@ -593,15 +593,15 @@ void PrintAutoMessage(byte number)
   switch (number)
   {
     case MSG_AUTO_ERROR_SENSORES:
-      Serial.print(F("Error sensores tanque"));
+      Serial.print(F("Err sensores tanque"));
       break;
 
     case MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_VACIA:
-      Serial.print(F("Error Sensores - Tanque: Lleno, Cisterna: Vacia"));
+      Serial.print(F("Err Sensores - T: Lleno, C: Vacia"));
       break;
 
     case MSG_AUTO_ERROR_SENSORES_TANQUE_LLENO_CISTERNA_NORMAL:
-      Serial.print(F("Error Sensores - Tanque: Lleno, Cisterna: Normal"));
+      Serial.print(F("Err Sensores - T: Lleno, C: Normal"));
       break;
 
     case MSG_AUTO_ERROR_STOPPING_BOMBA_TIMEOUT:
@@ -688,7 +688,7 @@ void PrintAutoMessage(byte number)
       break;
 
     case MSG_AUTO_BOMBA_ACTIVA_OK:
-      Serial.print(F("B Activa Normalizada"));
+      Serial.print(F("B Activa Normal"));
       break;
   }
 

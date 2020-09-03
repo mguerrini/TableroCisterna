@@ -15,12 +15,16 @@ void SetupAlarm()
 
 void ActivateAlarm()
 {
+#ifdef ALARM_ENABLED
   digitalWrite(ALARM_PIN, HIGH);
+#endif
 }
 
 void DeactivateAlarm()
 {
+#ifdef ALARM_ENABLED
   digitalWrite(ALARM_PIN, LOW);
+#endif
 }
 
 #endif
@@ -36,13 +40,18 @@ void SetupAlarm()
 
 void ActivateAlarm()
 {
+#ifdef ALARM_ENABLED
   tone(ALARM_PIN, 440);
+#endif
 }
 
 void DeactivateAlarm()
 {
+#ifdef ALARM_ENABLED
   noTone(ALARM_PIN);
   digitalWrite(ALARM_PIN, HIGH);
+#endif
+
 }
 
 #endif

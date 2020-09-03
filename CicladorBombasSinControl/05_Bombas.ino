@@ -294,7 +294,7 @@ void CleanFillTimes()
     bomba1.FillTimeSeconds[i] = 0;
     bomba2.FillTimeSeconds[i] = 0;
   }
-  
+
   bomba1.FillTimeSecondsAverage = 0;
   bomba2.FillTimeSecondsAverage = 0;
   bomba1.FillTimeSecondsMaximum = 0;
@@ -397,7 +397,10 @@ boolean IsBomba1TermicoOk()
 
   IsButtonPressed(BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
 
-  return isPressed;
+  if (BOMBA1_TERMICO_OK_NA)
+    return !isPressed;
+  else
+    return isPressed;
 }
 
 boolean IsBomba2TermicoOk()
@@ -408,7 +411,10 @@ boolean IsBomba2TermicoOk()
 
   IsButtonPressed(BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
 
-  return isPressed;
+  if (BOMBA2_TERMICO_OK_NA)
+    return !isPressed;
+  else
+    return isPressed;
 }
 
 boolean IsBomba1EnabledButtonPressed()

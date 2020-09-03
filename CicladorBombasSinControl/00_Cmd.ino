@@ -94,6 +94,7 @@ void ReadInfoViewButton()
 
 void ReadSwapButton()
 {
+  #ifdef BOMBA_SWAP_BTN_ENABLED
   if (IsBombaSwapButtonPressed())
   {
     //no puedo cambiar con el boton cuando estan encendidas
@@ -102,6 +103,7 @@ void ReadSwapButton()
 
     SwapAndActiveBomba();
   }
+  #endif
 }
 
 
@@ -290,10 +292,10 @@ void PrintAlarm()
 
 void PrintBomba(Bomba* bomba)
 {
-  Serial.print(F("IsEnabled: "));
+  Serial.print(F("Enabled: "));
   PrintTrueOrFalse (bomba->IsEnabled);
 
-  Serial.print(F("IsActive: "));
+  Serial.print(F("Active: "));
   PrintTrueOrFalse (bomba->IsActive);
 
   Serial.print(F("State: "));
@@ -312,7 +314,7 @@ void PrintBomba(Bomba* bomba)
   Serial.print(F("Uses: "));
   Serial.println(bomba->Uses);
 
-  Serial.print(F("ContactorErrCounter: "));
+  Serial.print(F("#ContactorErr: "));
   Serial.println(bomba->ContactorErrorCounter);
 
   Serial.print(F("Fill Time: "));
@@ -326,10 +328,10 @@ void PrintBomba(Bomba* bomba)
   }
   Serial.println(bomba->FillTimeSeconds[BOMBA_FILLTIMES_READ_MAX-1]);
 
-  Serial.print(F("IsContactorClosed: "));
+  Serial.print(F("ContactorClosed: "));
   PrintTrueOrFalse (bomba->IsContactorClosed);
 
-  Serial.print(F("IsTermicoOk: "));
+  Serial.print(F("TermicoOk: "));
   PrintTrueOrFalse (bomba->IsTermicoOk);
 
   Serial.print(F("ReqOn: "));

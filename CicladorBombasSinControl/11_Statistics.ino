@@ -138,6 +138,8 @@ void CleanStatistics(boolean save)
 void DoSaveStatistics()
 {
 #ifdef EEPROM_ENABLED
+#ifndef LOG_ENABLED
+
   unsigned long lAux = 0;
   unsigned int iAux = 0;
 
@@ -203,11 +205,13 @@ void DoSaveStatistics()
     EEPROM.put(ERROR_FASE_TOTAL_SECONDS_ADDR, statistics.ErrorFaseTotalSeconds);
 
 #endif
+#endif
 }
 
 void ReadStatistics()
 {
 #ifdef EEPROM_ENABLED
+#ifndef LOG_ENABLED
   unsigned long lAux = 0;
   unsigned int iAux = 0;
 
@@ -256,10 +260,12 @@ void ReadStatistics()
   EEPROM.get(ERROR_FASE_TOTAL_SECONDS_ADDR, lAux);
   statistics.ErrorFaseTotalSeconds = lAux;
 #endif
+#endif
 }
 
 void PrintStatistics()
 {
+#ifndef LOG_ENABLED
   PrintStatisticsBomba(statistics.Bomba1Uses, statistics.Bomba1TotalSeconds, statistics.Bomba1ErrorTermicoCount, &bomba1);
   Serial.println();
   PrintStatisticsBomba(statistics.Bomba2Uses, statistics.Bomba2TotalSeconds, statistics.Bomba2ErrorTermicoCount, &bomba2);
@@ -272,10 +278,14 @@ void PrintStatistics()
 
   Serial.print(F("T seg: "));
   Serial.println(statistics.ErrorFaseTotalSeconds);
+
+#endif
 }
 
 void PrintStatisticsBomba(unsigned long uses, unsigned long sec, unsigned long errTerm, Bomba* bomba)
 {
+#ifndef LOG_ENABLED
+
   Serial.print(F("** BOMBA "));
   Serial.print(bomba->Number);
   Serial.println(F(" **"));
@@ -291,4 +301,6 @@ void PrintStatisticsBomba(unsigned long uses, unsigned long sec, unsigned long e
 
   Serial.print(F("Llenado seg: "));
   Serial.println(bomba->FillTimeSecondsAverage);
+
+#endif
 }

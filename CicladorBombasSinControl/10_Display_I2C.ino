@@ -207,36 +207,36 @@ void ShowNextInfoView()
       lcd.setCursor(0, 0);
       lcd.print(F("** Falta de Fase ***"));
 
-      lcd.setCursor(0, 1);
+      lcd.setCursor(0, 2);
       lcd.print(F("Cantidad:"));
       len = GetLen(statistics.ErrorFaseCount);
-      lcd.setCursor(20 - len, 1);
+      lcd.setCursor(20 - len, 2);
       lcd.print(statistics.ErrorFaseCount);
 
-      lcd.setCursor(0, 2);
+      lcd.setCursor(0, 3);
       lcd.print(F("Tiempo:"));
-      PrintTimeFromSeconds(statistics.ErrorFaseTotalSeconds, 2, false);
+      PrintTimeFromSeconds(statistics.ErrorFaseTotalSeconds, 3, false);
       return;
 
     case 6:
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(F("**** Generales *****"));
-      lcd.setCursor(0, 1);
+      lcd.setCursor(0, 2);
       lcd.print(F("Bomba seleccionada:"));
-      lcd.setCursor(19, 1);
+      lcd.setCursor(19, 2);
       if (bomba1.IsActive)
         lcd.print(BOMBA1);
       else
         lcd.print(BOMBA2);
 
-      lcd.setCursor(0, 2);
+      lcd.setCursor(0, 3);
       lcd.print(F("Ciclos seguidos:"));
       uses = bomba1.Uses;
       if (bomba2.IsActive)
         uses  = bomba2.Uses;
       len = GetLen(uses);
-      lcd.setCursor(20 - len, 2);
+      lcd.setCursor(20 - len, 3);
       lcd.print(uses);
 
       return;
@@ -293,9 +293,9 @@ void PrintTanqueView(Bomba* bomba)
   
   lcd.setCursor(0, 1);
   if (bomba->Number == BOMBA1)
-    lcd.print(F("** Llenado con B1 **"));
+    lcd.print(F("-- Llenado con B1 --"));
   else
-    lcd.print(F("** Llenado con B2 **"));
+    lcd.print(F("-- Llenado con B2 --"));
   
   lcd.setCursor(0, 2);
   lcd.print(F("Promedio:"));

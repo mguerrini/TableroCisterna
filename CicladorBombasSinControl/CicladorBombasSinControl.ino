@@ -3,7 +3,7 @@
 
 //#define LOG_ENABLED
 #ifdef LOG_ENABLED
-#define LOG_MIN_ENABLED
+  #define LOG_MIN_ENABLED
 #endif
 
 //DISPLAYS
@@ -12,10 +12,10 @@
 // --- DEBUG ---
 //#define DEBUG
 #ifdef DEBUG
-  #define DEBUG_CONTINUE_PIN A2
+  #define DEBUG_CONTINUE_PIN 12
 #endif
 
-#define MODO_OUTPUT_VIEW_ENABLED //Muestra el modo en la pantalla
+//#define MODO_OUTPUT_VIEW_ENABLED //Muestra el modo en la pantalla
 
 //funciones con referencias
 boolean IsButtonPressed(int pin, boolean &state, boolean &isPressed, unsigned long &startTime);
@@ -62,13 +62,14 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 #define BTN_PRESSED_TIME 20 //20 milisegundos de boton presionado, para evitar rebote
 
-// ====================== BOTONES VARIOS ====================
+// ====================== BOTONES VARIOS ====================¡
+#define BOMBA_SWAP_BTN_ENABLED
 #define BOMBA_SWAP_BTN_PIN 12  //Cambiar bomba seleccionada
 #define RESET_BTN_PIN 11
 
 // ====================== INFO VIEW ====================
 
-#define INFO_VIEW_VISIBLE_TIME 5000 //10 SEGUNDOS
+#define INFO_VIEW_VISIBLE_TIME 10000 //10 SEGUNDOS
 #define VIEW_INFO_PIN A0 //Muestra información estadisticas y valores varios
 
 // ====================== INVERSOR ======================
@@ -81,16 +82,18 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 // ====================== ALARMA ======================
-//#define ALARM_BUZZER
-#define ALARM_LED
+//#define ALARM_ENABLED
+#define ALARM_BUZZER
+//#define ALARM_LED
 #define ALARM_PIN 10
 
 
 // ====================== FASES ======================
-//#define FASE1_ENABLED //si no esta definido, asigna los valores por defeto en vez de leer la eeprom y los valores inputs
+//si no esta definido, asigna los valores por defeto en vez de leer la eeprom y los valores inputs
+#define FASE1_ENABLED 
 #define FASE1_INPUT_PIN A2
 
-//#define FASE2_ENABLED
+#define FASE2_ENABLED
 #define FASE2_INPUT_PIN A6
 
 #define FASE3_ENABLED
@@ -108,9 +111,9 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define FASE3_220_VALUE 1023
 
 
-#define FASE_MIN_VOLTAGE 3 //Valor minimo antes de que se considere falla. 3 para testear
+#define FASE_MIN_VOLTAGE 185 //Valor minimo antes de que se considere falla. 3 para testear
 #define FASE_READ_COUNT_MAX 50 //100 milisegundos donde se promedia el valor leiado
-#define FASE_WAIT_BETWEEN_READS 10 //10 milisegundos de espera entre las mediciones
+#define FASE_WAIT_BETWEEN_READS 25 //10 milisegundos de espera entre las mediciones
 #define FASE_REFRESH_TIME 500 //milisegundos que refresca las tensiones
 
 // ====================== MODO ======================
@@ -118,7 +121,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define AUTO 1
 
 #define CHANGE_MODE_BTN_PIN A3 //selector Manual / Automatico
-#define IS_CHANGE_MODE_PULSADOR true //tipo de boton, pulsador o llave
+//#define IS_CHANGE_MODE_SWITCH //si esta defino es tipo llave, queda el contacto fijo. Sino esta defino es un pulsador y cambia por cada cambio de estado
+
 
 
 // ====================== BOMBAS ======================
@@ -129,6 +133,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA1_CONTACTOR_RETORNO_PIN  4
 #define BOMBA2_CONTACTOR_RETORNO_PIN  5
 
+#define BOMBA1_TERMICO_OK_NA true
+#define BOMBA2_TERMICO_OK_NA true
 #define BOMBA1_TERMICO_RETORNO_PIN  6
 #define BOMBA2_TERMICO_RETORNO_PIN  7
 
@@ -159,7 +165,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 // ====================== ESTADISTICAS ======================
-#define STATISTICS_TIME_TO_SAVE 300000 //43200000 = (24 / 2) * (60 * 60 * 1000) 2 veces por dia. Valor expresado en milisegundos
+#define STATISTICS_TIME_TO_SAVE 43200000 //43200000 = (24 / 2) * (60 * 60 * 1000) 2 veces por dia. Valor expresado en milisegundos
 #define CLEAN_STADISTICS_PRESS_TIME 5000 //10 segundos - tiempo (milisegundos) que se tiene que tener presionado el boton reset para limpiar las estadisticas
 
 
@@ -463,7 +469,9 @@ void SetupPins()
   // --- BUTTON ---
   pinMode(CHANGE_MODE_BTN_PIN, INPUT_PULLUP);
 
+#ifdef BOMBA_SWAP_BTN_ENABLED
   pinMode(BOMBA_SWAP_BTN_PIN, INPUT_PULLUP);
+#endif
 
   pinMode(RESET_BTN_PIN, INPUT_PULLUP);
 
