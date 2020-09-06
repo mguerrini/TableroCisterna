@@ -1,7 +1,7 @@
 #include <EEPROM.h>
 
 
-//#define LOG_ENABLED
+#define LOG_ENABLED
 #ifdef LOG_ENABLED
   #define LOG_MIN_ENABLED
 #endif
@@ -61,6 +61,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 // ****************************************************************** //
 
 #define BTN_PRESSED_TIME 20 //20 milisegundos de boton presionado, para evitar rebote
+#define CONTACTOR_CLOSED_TIME 3000 //3 segundos hasta que se considera el contactor cerrado
+
 
 // ====================== BOTONES VARIOS ====================¡
 #define BOMBA_SWAP_BTN_ENABLED
@@ -127,11 +129,11 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== BOMBAS ======================
 // --- PINES ---
-#define BOMBA1_ENABLE_PIN  2
-#define BOMBA2_ENABLE_PIN  3
+#define BOMBA1_ENABLE_PIN  3
+#define BOMBA2_ENABLE_PIN  2
 
-#define BOMBA1_CONTACTOR_RETORNO_PIN  4
-#define BOMBA2_CONTACTOR_RETORNO_PIN  5
+#define BOMBA1_CONTACTOR_RETORNO_PIN  5
+#define BOMBA2_CONTACTOR_RETORNO_PIN  4
 
 #define BOMBA1_TERMICO_OK_NA true
 #define BOMBA2_TERMICO_OK_NA true
@@ -144,8 +146,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA2 2
 
 #define BOMBA_USES_MAX 1 //cantidad de usos seguidos por default. Se usa cuando no esta habilitada la EEPROM
-#define BOMBA_TURNING_ON_TIME 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
-#define BOMBA_TURNING_OFF_TIME 5000 //tiempo que espera hasta que el contactor avise que se abrio.
+#define BOMBA_TURNING_ON_TIME 6000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
+#define BOMBA_TURNING_OFF_TIME 6000 //tiempo que espera hasta que el contactor avise que se abrio.
 
 #define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 0 //Maxima cantidad de intentos
 #define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor
@@ -159,6 +161,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define CISTERNA_EMPTY_MAX_TIME 10000 //tiempo (milisegundos) que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
 
 // --- TANQUE ---
+#define TANQUE_FULL_NA true //Indica el estado del tanque cuando esta lleno. TRUE = abierto esta lleno FALSE = Cerrado esta lleno
 #define TANQUE_EMPTY_FULL_PIN  9
 #define TANQUE_TIME_TO_FULL_INITIAL 10000 //tiempo (millisegundos) inicial para el llenado del tanque. Luego calcula el tiempo maximo por tanque
 #define TANQUE_TIME_TO_FULL_FACTOR 2 //valor a multiplicar por el tiempo de llenado maximo para obtener el tiempo limite de llenado

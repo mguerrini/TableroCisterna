@@ -121,7 +121,7 @@ boolean ReadFase1(unsigned long t)
   int fase1Val = analogRead(FASE1_INPUT_PIN);
   float volts = mapLocal(fase1Val, 0, fase1.ConversionFactor, 0, fase1.InputVoltsReference);
   //agrego el nuevo valor
-  UpdateFaseValues(&fase1, t, volts);
+  UpdateFaseValues(1, &fase1, t, volts);
 #else
   fase1.Voltage = fase1.InputVoltsReference;
   fase1.IsOk = true;
@@ -140,7 +140,7 @@ boolean ReadFase2(unsigned long t)
   int fase2Val = analogRead(FASE2_INPUT_PIN);
   float volts = mapLocal(fase2Val, 0, fase2.ConversionFactor, 0, fase2.InputVoltsReference);
   //agrego el nuevo valor
-  UpdateFaseValues(&fase2, t, volts);
+  UpdateFaseValues(2, &fase2, t, volts);
 #else
   fase2.Voltage = fase2.InputVoltsReference;
   fase2.IsOk = true;
@@ -160,7 +160,7 @@ boolean ReadFase3(unsigned long t)
   float volts = mapLocal(fase3Val, 0, fase3.ConversionFactor, 0, fase3.InputVoltsReference);
 
   //agrego el nuevo valor
-  UpdateFaseValues(&fase3, t, volts);
+  UpdateFaseValues(3, &fase3, t, volts);
 #else
   fase3.Voltage = fase3.InputVoltsReference;
   fase3.IsOk = true;
@@ -170,7 +170,7 @@ boolean ReadFase3(unsigned long t)
 }
 
 
-void UpdateFaseValues(Fase * fase, unsigned long readTime, float volts)
+void UpdateFaseValues(int number, Fase * fase, unsigned long readTime, float volts)
 {
   fase->ReadCount = fase->ReadCount + 1;
   fase->ReadTotal = fase->ReadTotal + volts;
@@ -188,12 +188,14 @@ void UpdateFaseValues(Fase * fase, unsigned long readTime, float volts)
 
     fase->Voltage = value;
     fase->IsOk = fase->Voltage > FASE_MIN_VOLTAGE;
-    /*
-            Serial.print(F("Voltage: "));
-            Serial.print(fase->Voltage);
-            Serial.print(F(" IsOk: "));
-            Serial.println(fase->IsOk);
-    */
+
+    Serial.print(F("F: "));
+    Serial.print(number);
+    Serial.print(F(" Voltage: "));
+    Serial.print(fase->Voltage);
+    Serial.print(F(" IsOk: "));
+    Serial.println(fase->IsOk);
+
     //reseteo
     fase->ReadCount = 0;
     fase->ReadTotal = 0;

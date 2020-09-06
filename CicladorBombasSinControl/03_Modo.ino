@@ -73,7 +73,7 @@ boolean IsChangeModeButtonPressed(bool isPulsadorMode)
   static boolean state;
   static boolean isPressed;
 
-  boolean pulsador = IsButtonPressed(CHANGE_MODE_BTN_PIN, state, isPressed, startTime);
+  boolean pulsador = IsButtonPressed(BTN_PRESSED_TIME, CHANGE_MODE_BTN_PIN, state, isPressed, startTime);
 
   if (isPulsadorMode)
   {

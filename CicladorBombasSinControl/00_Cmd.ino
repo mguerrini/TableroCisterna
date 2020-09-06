@@ -169,7 +169,7 @@ boolean IsInfoViewButtonPressed()
   static boolean state = digitalRead(VIEW_INFO_PIN);
   static boolean isPressed = false;
 
-  return IsButtonPressed(VIEW_INFO_PIN, state, isPressed, startTime);
+  return IsButtonPressed(BTN_PRESSED_TIME, VIEW_INFO_PIN, state, isPressed, startTime);
 }
 
 
@@ -185,7 +185,7 @@ boolean IsContinueButtonPressed()
   static boolean state;
   static boolean isPressed;
 
-  return IsButtonPressed(DEBUG_CONTINUE_PIN, state, isPressed, startTime);
+  return IsButtonPressed(BTN_PRESSED_TIME, DEBUG_CONTINUE_PIN, state, isPressed, startTime);
 }
 #endif
 
@@ -249,6 +249,9 @@ void DoPrintStatus()
   //Serial.println();
 
   PrintAlarm();
+  Serial.println();
+
+  PrintFases();
   Serial.println();
 
 }
@@ -375,6 +378,17 @@ void PrintStateBomba(Bomba* bomba, bool newLine)
   if (newLine)
     Serial.println();
 }
+
+void PrintFases()
+{
+  Serial.print(F("F1: "));
+  Serial.println(fase1.IsOk);
+  Serial.print(F("F2: "));
+  Serial.println(fase2.IsOk);
+  Serial.print(F("F3: "));
+  Serial.println(fase3.IsOk);
+}
+
 
 // *************************************************** //
 //                AUXILIARES
