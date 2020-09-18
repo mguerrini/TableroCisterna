@@ -1,7 +1,7 @@
 #include <EEPROM.h>
 
 
-#define LOG_ENABLED
+//#define LOG_ENABLED
 #ifdef LOG_ENABLED
   #define LOG_MIN_ENABLED
 #endif
@@ -61,7 +61,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 // ****************************************************************** //
 
 #define BTN_PRESSED_TIME 20 //20 milisegundos de boton presionado, para evitar rebote
-#define CONTACTOR_CLOSED_TIME 3000 //3 segundos hasta que se considera el contactor cerrado
+#define CONTACTOR_CLOSED_TIME 250 //500 milisegundos segundos hasta que se considera el contactor cerrado
 
 
 // ====================== BOTONES VARIOS ====================¡
@@ -92,13 +92,13 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== FASES ======================
 //si no esta definido, asigna los valores por defeto en vez de leer la eeprom y los valores inputs
-#define FASE1_ENABLED 
+//#define FASE1_ENABLED 
 #define FASE1_INPUT_PIN A2
 
-#define FASE2_ENABLED
+//#define FASE2_ENABLED
 #define FASE2_INPUT_PIN A6
 
-#define FASE3_ENABLED
+//#define FASE3_ENABLED
 #define FASE3_INPUT_PIN A7
 
 #define FASE_OUTPUT_PIN 13
@@ -146,8 +146,8 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define BOMBA2 2
 
 #define BOMBA_USES_MAX 1 //cantidad de usos seguidos por default. Se usa cuando no esta habilitada la EEPROM
-#define BOMBA_TURNING_ON_TIME 6000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
-#define BOMBA_TURNING_OFF_TIME 6000 //tiempo que espera hasta que el contactor avise que se abrio.
+#define BOMBA_TURNING_ON_TIME CONTACTOR_CLOSED_TIME + 5000 //tiempo en milisegundos que espera a que el contactor avise que se cerro.
+#define BOMBA_TURNING_OFF_TIME CONTACTOR_CLOSED_TIME + 5000 //tiempo que espera hasta que el contactor avise que se abrio.
 
 #define BOMBA_CONTACTOR_ERROR_INTENTOS_MAX 0 //Maxima cantidad de intentos
 #define BOMBA_CONTACTOR_ERROR_INTERVAL 10000 //Intervalo de tiempo entre intentos de recuperar el contactor

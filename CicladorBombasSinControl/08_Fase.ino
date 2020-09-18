@@ -188,14 +188,14 @@ void UpdateFaseValues(int number, Fase * fase, unsigned long readTime, float vol
 
     fase->Voltage = value;
     fase->IsOk = fase->Voltage > FASE_MIN_VOLTAGE;
-
+/*
     Serial.print(F("F: "));
     Serial.print(number);
     Serial.print(F(" Voltage: "));
     Serial.print(fase->Voltage);
     Serial.print(F(" IsOk: "));
     Serial.println(fase->IsOk);
-
+*/
     //reseteo
     fase->ReadCount = 0;
     fase->ReadTotal = 0;
