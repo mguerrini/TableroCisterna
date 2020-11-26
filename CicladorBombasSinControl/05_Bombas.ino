@@ -59,7 +59,21 @@ void ReadBombaSensors(Bomba* bomba)
   bool termicoOk;
   bool contactorChanged;
   bool termicoChanged;
+/*
+    contactorClosed = IsBomba1ContactorClosed();
+    Serial.print(F("Bomba 1"));
+    if (contactorClosed)
+      Serial.println(F(": Contactor Cerrado"));
+    else
+      Serial.println(F(": Contactor Abierto"));
 
+    contactorClosed = IsBomba2ContactorClosed();
+    Serial.print(F("Bomba 2"));
+    if (contactorClosed)
+      Serial.println(F(": Contactor Cerrado"));
+    else
+      Serial.println(F(": Contactor Abierto"));
+*/
   if (bomba->Number == BOMBA1)
   {
     contactorClosed = IsBomba1ContactorClosed();

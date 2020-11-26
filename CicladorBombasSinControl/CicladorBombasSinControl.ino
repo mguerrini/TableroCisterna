@@ -1,7 +1,7 @@
 #include <EEPROM.h>
 
 
-//#define LOG_ENABLED
+#define LOG_ENABLED
 #ifdef LOG_ENABLED
   #define LOG_MIN_ENABLED
 #endif
@@ -161,7 +161,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define CISTERNA_EMPTY_MAX_TIME 10000 //tiempo (milisegundos) que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
 
 // --- TANQUE ---
-#define TANQUE_FULL_NA true //Indica el estado del tanque cuando esta lleno. TRUE = abierto esta lleno FALSE = Cerrado esta lleno
+#define TANQUE_FULL_NA false //Indica el estado del tanque cuando esta lleno. TRUE = abierto esta lleno FALSE = Cerrado esta lleno
 #define TANQUE_EMPTY_FULL_PIN  9
 #define TANQUE_TIME_TO_FULL_INITIAL 10000 //tiempo (millisegundos) inicial para el llenado del tanque. Luego calcula el tiempo maximo por tanque
 #define TANQUE_TIME_TO_FULL_FACTOR 2 //valor a multiplicar por el tiempo de llenado maximo para obtener el tiempo limite de llenado
