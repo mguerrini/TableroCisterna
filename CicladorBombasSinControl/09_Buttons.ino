@@ -12,7 +12,7 @@
 
 //Cada vez que se presiona el botón devuelve true y luego false. Una sola vez retorna TRUE, aunque siga presionado.
 //Mientras se mantenga presionado isPressed es va a ser TRUE
-boolean IsButtonPressed(int pressedTime, int pin, boolean &state, boolean &isPressed, unsigned long &startTime)
+boolean IsButtonPressed(bool pressValue, int pressedTime, int pin, boolean &state, boolean &isPressed, unsigned long &startTime)
 {
   //Serial.println(F("IsButtonPressed - Start"));
   unsigned long currMillis = millis();
@@ -30,7 +30,7 @@ boolean IsButtonPressed(int pressedTime, int pin, boolean &state, boolean &isPre
 
 
   //state == LOW -> Esta presionado
-  if (state == LOW && !isPressed) {
+  if (state == pressValue && !isPressed) {
     unsigned long delta = deltaMillis(currMillis, startTime);
     boolean output = delta > pressedTime;
 
@@ -49,6 +49,7 @@ boolean IsButtonPressed(int pressedTime, int pin, boolean &state, boolean &isPre
     return false;
   }
 }
+
 
 boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed, unsigned long &startTime, unsigned long minTime, unsigned long maxTime)
 {

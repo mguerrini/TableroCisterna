@@ -95,9 +95,12 @@ boolean IsCisternaEmpty()
   static boolean state = digitalRead(CISTERNA_EMPTY_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(BTN_PRESSED_TIME, CISTERNA_EMPTY_PIN, state, isPressed, startTime);
+  IsButtonPressed(HIGH, BTN_PRESSED_TIME, CISTERNA_EMPTY_PIN, state, isPressed, startTime);
 
-  return isPressed;
+  if (CISTERNA_EMPTY_NA)
+    return !isPressed;
+  else
+    return isPressed;
 }
 
 
@@ -107,7 +110,7 @@ boolean IsTanqueEmpty()
   static boolean state = digitalRead(TANQUE_EMPTY_FULL_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(BTN_PRESSED_TIME, TANQUE_EMPTY_FULL_PIN, state, isPressed, startTime);
+  IsButtonPressed(HIGH, BTN_PRESSED_TIME, TANQUE_EMPTY_FULL_PIN, state, isPressed, startTime);
 
   if (TANQUE_FULL_NA)
     return !isPressed;

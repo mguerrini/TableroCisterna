@@ -13,12 +13,6 @@ LiquidCrystal_I2C lcd(0x3F, 20, 4); // set the LCD address to 0x27 for a 16 char
 
 void SetupDisplay()
 {
-  lcd.init();                      // initialize the lcd
-  lcd.init();
-  // Print a message to the LCD.
-  lcd.clear();
-  lcd.backlight();
-
   //tres tipos de ventanas
   view.IsMainViewActive = true;
   view.IsErrorFaseViewActive = false;
@@ -28,9 +22,26 @@ void SetupDisplay()
   view.InfoViewNumberActive = 0;
   view.InfoViewNumberActiveTime = 0;
 
-  ShowMainView();
+  ResetDisplay();
 }
 
+
+void ResetDisplay()
+{
+  lcd.init();                      // initialize the lcd
+  lcd.init();
+  // Print a message to the LCD.
+  lcd.clear();
+  lcd.backlight();
+
+  ShowActiveView();
+}
+
+void RefreshDisplay()
+{
+  lcd.clear();
+  ShowActiveView();
+}
 
 // ****************************************************************** //
 //                          VISTAS

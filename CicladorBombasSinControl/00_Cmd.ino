@@ -118,6 +118,8 @@ void ReadResetAndClearStatisticsButton()
 #ifdef LOG_ENABLED
     Serial.println(F("RESET"));
 #endif    
+    ResetDisplay();
+
     automaticFSM.FromState = AUTO_IDLE;
     automaticFSM.State = AUTO_IDLE;
     automaticFSM.NextState = AUTO_NULL;
@@ -169,7 +171,7 @@ boolean IsInfoViewButtonPressed()
   static boolean state = digitalRead(VIEW_INFO_PIN);
   static boolean isPressed = false;
 
-  return IsButtonPressed(BTN_PRESSED_TIME, VIEW_INFO_PIN, state, isPressed, startTime);
+  return IsButtonPressed(LOW, BTN_PRESSED_TIME, VIEW_INFO_PIN, state, isPressed, startTime);
 }
 
 
@@ -185,7 +187,7 @@ boolean IsContinueButtonPressed()
   static boolean state;
   static boolean isPressed;
 
-  return IsButtonPressed(BTN_PRESSED_TIME, DEBUG_CONTINUE_PIN, state, isPressed, startTime);
+  return IsButtonPressed(LOW, BTN_PRESSED_TIME, DEBUG_CONTINUE_PIN, state, isPressed, startTime);
 }
 #endif
 

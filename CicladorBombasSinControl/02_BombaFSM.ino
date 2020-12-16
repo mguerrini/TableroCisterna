@@ -197,13 +197,14 @@ void ExecuteBombaState(Bomba* bomba)
     unsigned long workingMax = GetBombaWorkingTimeMaximumSeconds(bomba);
     unsigned long workingTime = GetBombaWorkingTimeInSeconds(bomba);
 
+#ifdef BOMBA_FILL_TIMEOUT_ENABLED
     if (workingTime > workingMax)
     {
       //cambio de bomba.....no esta funcionando
       bomba->NextMachineState = FSM_BOMBA_ERROR_FILL_TIMEOUT;
       bomba->Message = MSG_BOMBA_ACTIVA_FILL_TIMEOUT;
     }
-
+#endif
 
     return;
   }

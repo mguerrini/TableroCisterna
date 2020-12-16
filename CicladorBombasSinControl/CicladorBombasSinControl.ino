@@ -55,6 +55,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 #define ERROR_FASE_COUNT_ADDR 64 //unsigned long
 
 #define BOMBA_CICLOS_MAX_ADDR 70 //unsigned long
+//#define BOMBA_FILL_TIMEOUT_ENABLED 
 
 // ****************************************************************** //
 //                        CONFIGURACIONES
@@ -65,7 +66,10 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 
 // ====================== BOTONES VARIOS ====================¡
-#define BOMBA_SWAP_BTN_ENABLED
+
+#ifndef DEBUG_CONTINUE_PIN
+  #define BOMBA_SWAP_BTN_ENABLED
+#endif
 #define BOMBA_SWAP_BTN_PIN 12  //Cambiar bomba seleccionada
 #define RESET_BTN_PIN 11
 
@@ -157,6 +161,7 @@ boolean IsButtonPressedWithTimeRange(int pin, boolean &state, boolean &isPressed
 
 // ====================== CISTERNA/TANQUE ======================
 // --- CISTERNA ---
+#define CISTERNA_EMPTY_NA true
 #define CISTERNA_EMPTY_PIN  8
 #define CISTERNA_EMPTY_MAX_TIME 10000 //tiempo (milisegundos) que espera antes de hacer sonar la alarma por cisterna vacia....no se esta llenando
 
@@ -365,38 +370,38 @@ void setup() {
   automaticFSM.Mode = AUTO;
 
   SetupPins();
-  //Serial.println(F("Pins - Ready"));
+  Serial.println(F("Pins - Ready"));
 
   SetupLevelSensors();
-  //Serial.println(F("Level Sensors - Ready"));
+  Serial.println(F("Level Sensors - Ready"));
 
   SetupBombaSensors();
-  //Serial.println(F("Bombas Sensors - Ready"));
+  Serial.println(F("Bombas Sensors - Ready"));
 
   SetupBombas();
-  //Serial.println(F("Bombas - Ready"));
+  Serial.println(F("Bombas - Ready"));
 
   SetupAlarm();
-  //Serial.println(F("Alarm - Ready"));
+  Serial.println(F("Alarm - Ready"));
 
   SetupMode();
-  //Serial.println(F("Mode - Ready"));
+  Serial.println(F("Mode - Ready"));
 
   SetupFase();
-  //Serial.println(F("Fases Sensor - Ready"));
+  Serial.println(F("Fases Sensor - Ready"));
 
   SetupCommands();
-  //Serial.println(F("Commands - Ready"));
+  Serial.println(F("Commands - Ready"));
 
   SetupStatistics();
-  //Serial.println(F("Statistics - Ready"));
+  Serial.println(F("Statistics - Ready"));
 
   SetupAutoFSM();
-  //Serial.println(F("Main FSM  - Ready"));
+  Serial.println(F("Main FSM  - Ready"));
 
   // put your setup code here, to run once:
   SetupDisplay();
-  //Serial.println(F("Display - Ready"));
+  Serial.println(F("Display - Ready"));
 
   Serial.println(F("Ready"));
 }
@@ -506,17 +511,17 @@ void SetupPins()
 
   pinMode(BOMBA2_ENABLE_PIN, INPUT_PULLUP);
 
-  pinMode(BOMBA1_CONTACTOR_RETORNO_PIN, INPUT_PULLUP);
+  pinMode(BOMBA1_CONTACTOR_RETORNO_PIN, INPUT);
 
-  pinMode(BOMBA2_CONTACTOR_RETORNO_PIN, INPUT_PULLUP);
+  pinMode(BOMBA2_CONTACTOR_RETORNO_PIN, INPUT);
 
-  pinMode(BOMBA1_TERMICO_RETORNO_PIN, INPUT_PULLUP);
+  pinMode(BOMBA1_TERMICO_RETORNO_PIN, INPUT);
 
-  pinMode(BOMBA2_TERMICO_RETORNO_PIN, INPUT_PULLUP);
+  pinMode(BOMBA2_TERMICO_RETORNO_PIN, INPUT);
 
   // --- SENSOR DE NIVELES ---
-  pinMode(CISTERNA_EMPTY_PIN, INPUT_PULLUP);
-  pinMode(TANQUE_EMPTY_FULL_PIN, INPUT_PULLUP);
+  pinMode(CISTERNA_EMPTY_PIN, INPUT);
+  pinMode(TANQUE_EMPTY_FULL_PIN, INPUT);
 }
 
 

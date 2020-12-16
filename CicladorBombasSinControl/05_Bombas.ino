@@ -88,6 +88,12 @@ void ReadBombaSensors(Bomba* bomba)
   termicoChanged = termicoOk != bomba->IsTermicoOk;
   contactorChanged = contactorClosed != bomba->IsContactorClosed;
   /*
+  if (contactorChanged)
+  {
+    RefreshDisplay();
+  }
+  */
+  /*
     #ifdef LOG_ENABLED
     if (termicoChanged)
     {
@@ -376,7 +382,7 @@ bool IsBombaSwapButtonPressed()
   static boolean state = digitalRead(BOMBA_SWAP_BTN_PIN);
   static boolean isPressed;
 
-  return IsButtonPressed(BTN_PRESSED_TIME, BOMBA_SWAP_BTN_PIN, state, isPressed, startTime);
+  return IsButtonPressed(LOW, BTN_PRESSED_TIME, BOMBA_SWAP_BTN_PIN, state, isPressed, startTime);
 }
 
 
@@ -386,7 +392,7 @@ boolean IsBomba1ContactorClosed()
   static boolean state = digitalRead(BOMBA1_CONTACTOR_RETORNO_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(CONTACTOR_CLOSED_TIME, BOMBA1_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(HIGH, CONTACTOR_CLOSED_TIME, BOMBA1_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
@@ -397,7 +403,7 @@ boolean IsBomba2ContactorClosed()
   static boolean state = digitalRead(BOMBA2_CONTACTOR_RETORNO_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(CONTACTOR_CLOSED_TIME, BOMBA2_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(HIGH, CONTACTOR_CLOSED_TIME, BOMBA2_CONTACTOR_RETORNO_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
@@ -409,7 +415,7 @@ boolean IsBomba1TermicoOk()
   static boolean state = digitalRead(BOMBA1_TERMICO_RETORNO_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(BTN_PRESSED_TIME, BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(HIGH, BTN_PRESSED_TIME, BOMBA1_TERMICO_RETORNO_PIN, state, isPressed, startTime);
 
   if (BOMBA1_TERMICO_OK_NA)
     return !isPressed;
@@ -423,7 +429,7 @@ boolean IsBomba2TermicoOk()
   static boolean state = digitalRead(BOMBA2_TERMICO_RETORNO_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(BTN_PRESSED_TIME, BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
+  IsButtonPressed(HIGH, BTN_PRESSED_TIME, BOMBA2_TERMICO_RETORNO_PIN, state, isPressed, startTime);
 
   if (BOMBA2_TERMICO_OK_NA)
     return !isPressed;
@@ -437,7 +443,7 @@ boolean IsBomba1EnabledButtonPressed()
   static boolean state = digitalRead(BOMBA1_ENABLE_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(BTN_PRESSED_TIME, BOMBA1_ENABLE_PIN, state, isPressed, startTime);
+  IsButtonPressed(LOW, BTN_PRESSED_TIME, BOMBA1_ENABLE_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
@@ -448,7 +454,7 @@ boolean IsBomba2EnabledButtonPressed()
   static boolean state = digitalRead(BOMBA2_ENABLE_PIN);
   static boolean isPressed;
 
-  IsButtonPressed(BTN_PRESSED_TIME, BOMBA2_ENABLE_PIN, state, isPressed, startTime);
+  IsButtonPressed(LOW, BTN_PRESSED_TIME, BOMBA2_ENABLE_PIN, state, isPressed, startTime);
 
   return isPressed;
 }
