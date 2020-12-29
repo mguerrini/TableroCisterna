@@ -49,31 +49,35 @@ void SetupBombas()
 
 void ReadBombaSensors()
 {
-  ReadBombaSensors(&bomba1);
-  ReadBombaSensors(&bomba2);
+  bool change1 = ReadBombaSensors(&bomba1);
+  bool change2 = ReadBombaSensors(&bomba2);
+
+  if (change1 || change2) {
+    ResetDisplay();
+  }
 }
 
-void ReadBombaSensors(Bomba* bomba)
+bool ReadBombaSensors(Bomba* bomba)
 {
   bool contactorClosed;
   bool termicoOk;
   bool contactorChanged;
   bool termicoChanged;
-/*
-    contactorClosed = IsBomba1ContactorClosed();
-    Serial.print(F("Bomba 1"));
-    if (contactorClosed)
-      Serial.println(F(": Contactor Cerrado"));
-    else
-      Serial.println(F(": Contactor Abierto"));
+  /*
+      contactorClosed = IsBomba1ContactorClosed();
+      Serial.print(F("Bomba 1"));
+      if (contactorClosed)
+        Serial.println(F(": Contactor Cerrado"));
+      else
+        Serial.println(F(": Contactor Abierto"));
 
-    contactorClosed = IsBomba2ContactorClosed();
-    Serial.print(F("Bomba 2"));
-    if (contactorClosed)
-      Serial.println(F(": Contactor Cerrado"));
-    else
-      Serial.println(F(": Contactor Abierto"));
-*/
+      contactorClosed = IsBomba2ContactorClosed();
+      Serial.print(F("Bomba 2"));
+      if (contactorClosed)
+        Serial.println(F(": Contactor Cerrado"));
+      else
+        Serial.println(F(": Contactor Abierto"));
+  */
   if (bomba->Number == BOMBA1)
   {
     contactorClosed = IsBomba1ContactorClosed();
@@ -88,10 +92,10 @@ void ReadBombaSensors(Bomba* bomba)
   termicoChanged = termicoOk != bomba->IsTermicoOk;
   contactorChanged = contactorClosed != bomba->IsContactorClosed;
   /*
-  if (contactorChanged)
-  {
+    if (contactorChanged)
+    {
     RefreshDisplay();
-  }
+    }
   */
   /*
     #ifdef LOG_ENABLED
@@ -128,6 +132,8 @@ void ReadBombaSensors(Bomba* bomba)
       Serial.println(F(": Termico Abierto"));
   }
 #endif
+
+  return termicoChanged || contactorChanged;
 }
 
 void ReadEnabledBombas()
